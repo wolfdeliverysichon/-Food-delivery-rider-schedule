@@ -29,13 +29,17 @@
         }
     </script>
     <style>
+        /* ซ่อน Template ก่อน Vue 3 Mount เสร็จสมบูรณ์ เพื่อไม่ให้เห็น {{ ... }} */
+        [v-cloak] {
+            display: none !important;
+        }
         body {
             font-family: 'Prompt', sans-serif;
-            background-color: #FEF3C7;
+            background-color: #FEF9C3;
         }
-        /* พื้นหลังโปสเตอร์สีเหลืองทองอบอุ่นตามต้นฉบับ */
+        /* พื้นหลังโปสเตอร์สีเหลืองทองอบอุ่นตามต้นฉบับ Wolf Delivery */
         .poster-bg {
-            background: linear-gradient(180deg, #FEF08A 0%, #FDE047 52%, #FACC15 100%);
+            background: linear-gradient(180deg, #FEF9C3 0%, #FEF08A 48%, #FDE047 100%);
         }
         /* หัวข้อหลักสไตล์สติกเกอร์ขอบขาวตัวอักษรน้ำเงินเข้ม */
         .title-sticker {
@@ -73,12 +77,12 @@
         }
         @media print {
             .no-print { display: none !important; }
-            body { background: #FEF08A !important; }
+            body { background: #FEF9C3 !important; }
         }
     </style>
 </head>
 <body class="min-h-screen text-slate-900 antialiased selection:bg-orange-500 selection:text-white">
-    <div id="app" class="flex flex-col min-h-screen">
+    <div id="app" v-cloak class="flex flex-col min-h-screen">
 
         <!-- Toast Notification (แทน alert() ทั้งหมด) -->
         <div v-if="toast.show" class="fixed bottom-5 right-5 z-[100] max-w-sm animate-slideUp no-print">
@@ -97,8 +101,8 @@
             </div>
         </div>
 
-        <!-- ==================== TOP DARK NAVIGATION BAR ==================== -->
-        <nav class="bg-slate-900 text-white border-b-4 border-amber-400 sticky top-0 z-40 shadow-xl no-print">
+        <!-- ==================== TOP DARK NAVIGATION BAR (#0F172A) ==================== -->
+        <nav class="bg-[#0F172A] text-white border-b-4 border-amber-400 sticky top-0 z-40 shadow-xl no-print">
             <div class="max-w-5xl mx-auto px-3 sm:px-4 py-2.5 flex flex-wrap items-center justify-between gap-2.5">
                 
                 <!-- 1. โลโก้ Wolf Delivery + ป้ายสถานะ Cloud Sync / ปุ่มสร้างตาราง SQL -->
@@ -116,14 +120,14 @@
                             Cloud Sync
                         </span>
 
-                        <!-- สถานะกำลังโหลด -->
+                        <!-- สถานะกำลังซิงค์ -->
                         <span v-else-if="dbStatus === 'connecting'"
-                            class="inline-flex items-center gap-1.5 text-[11px] px-2.5 py-0.5 rounded-full font-bold bg-slate-700 text-slate-300 border border-slate-600">
+                            class="inline-flex items-center gap-1.5 text-[11px] px-2.5 py-0.5 rounded-full font-bold bg-slate-800 text-slate-300 border border-slate-600">
                             <i class="fa-solid fa-spinner fa-spin text-[10px]"></i>
                             กำลังซิงค์...
                         </span>
 
-                        <!-- สถานะยังไม่ได้รัน SQL สร้างตารางใน Supabase: ปุ่มสีเหลืองคลิกเปิดคู่มือ SQL ได้ทันที -->
+                        <!-- ปุ่มแจ้งเตือนแบบไม่บังหน้าจอ เมื่อยังไม่ได้สร้างตาราง SQL ใน Supabase -->
                         <button v-else @click="showSqlModal = true"
                             class="inline-flex items-center gap-1 text-[11px] px-2.5 py-0.5 rounded-full font-extrabold bg-amber-400 hover:bg-amber-300 text-slate-950 shadow animate-pulse cursor-pointer">
                             ⚠️ คลิกสร้างตาราง SQL
@@ -131,7 +135,7 @@
                     </div>
                 </div>
 
-                <!-- 2. ตัวเลือกเดือน ปี พ.ศ. และช่วงวันที่ -->
+                <!-- 2. ตัวเลือกเดือน ปี พ.ศ. (2568 - 2575) และช่วงวันที่ -->
                 <div class="flex flex-wrap items-center gap-1.5 sm:gap-2">
                     <select v-model="currentMonth" @change="onMonthOrYearChange"
                         class="bg-slate-800 text-amber-300 border border-slate-600 rounded-xl px-2.5 py-1.5 text-xs sm:text-sm font-bold outline-none focus:border-amber-400 cursor-pointer">
@@ -151,7 +155,7 @@
                     </select>
                 </div>
 
-                <!-- 3. ปุ่มบันทึกรูป PNG และ ปลดล็อกแอดมิน / โหมดแอดมิน -->
+                <!-- 3. ปุ่มบันทึกรูป PNG และ ปลดล็อกแอดมิน / โหมดแอดมิน (ล็อก) -->
                 <div class="flex items-center gap-2">
                     <button @click="exportPosterPng" :disabled="isExporting"
                         class="bg-emerald-500 hover:bg-emerald-400 disabled:opacity-60 text-slate-950 px-3 py-1.5 rounded-xl font-extrabold text-xs sm:text-sm shadow flex items-center gap-1.5 transition-all cursor-pointer">
@@ -168,7 +172,7 @@
                     <button v-else @click="lockAdminScreen"
                         class="bg-rose-600 hover:bg-rose-500 text-white px-3 py-1.5 rounded-xl font-extrabold text-xs sm:text-sm shadow flex items-center gap-1.5 transition-all cursor-pointer">
                         <i class="fa-solid fa-shield-halved"></i>
-                        <span>โหมดแอดมิน</span>
+                        <span>โหมดแอดมิน (ล็อก)</span>
                     </button>
                 </div>
             </div>
@@ -195,15 +199,11 @@
                         </button>
                         <button @click="openChangePasswordModal"
                             class="bg-amber-500 hover:bg-amber-400 text-slate-950 px-2.5 py-1.5 rounded-xl text-xs font-extrabold flex items-center gap-1.5 shadow cursor-pointer">
-                            <i class="fa-solid fa-key"></i> เปลี่ยนรหัสผ่านแอดมิน
+                            <i class="fa-solid fa-key"></i> เปลี่ยนรหัสแอดมิน
                         </button>
                         <button @click="showSqlModal = true"
                             class="bg-teal-600 hover:bg-teal-500 text-white px-2.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow cursor-pointer">
-                            <i class="fa-solid fa-database"></i> โค้ด SQL / ตั้งค่า
-                        </button>
-                        <button @click="lockAdminScreen"
-                            class="bg-slate-600 hover:bg-slate-500 text-white px-2.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer">
-                            <i class="fa-solid fa-lock"></i> ล็อกหน้าจอ
+                            <i class="fa-solid fa-database"></i> ตั้งค่า SQL
                         </button>
                     </div>
                 </div>
@@ -243,7 +243,7 @@
             <div id="poster-area" class="poster-bg rounded-3xl overflow-hidden shadow-2xl border-4 border-amber-300 relative">
                 
                 <!-- Header Banner -->
-                <div class="relative pt-5 pb-0 overflow-hidden bg-gradient-to-b from-amber-200/80 via-yellow-300/60 to-amber-400/50">
+                <div class="relative pt-5 pb-0 overflow-hidden bg-gradient-to-b from-amber-100/90 via-yellow-200/75 to-amber-300/60">
                     
                     <!-- ซิลลูเอตตึกเมืองจางๆ ด้านหลัง -->
                     <div class="absolute inset-x-0 bottom-4 h-16 opacity-15 pointer-events-none flex items-end justify-between px-4">
@@ -396,9 +396,9 @@
                                 selectedRiderFilter && !day.isClosed && day.riders.includes(selectedRiderFilter) ? 'ring-4 ring-emerald-500' : ''
                             ]">
                             
-                            <!-- กล่องซ้าย: วันธรรมดา = ส้มสด (#EA580C) | วันเสาร์-อาทิตย์ = น้ำเงินเข้ม (#0F172A) -->
+                            <!-- กล่องซ้าย: วันธรรมดา = น้ำเงินเข้ม (#0F172A) | วันเสาร์-อาทิตย์ = ส้มสด (#F97316) -->
                             <div class="w-28 sm:w-32 flex-shrink-0 flex flex-col items-center justify-center p-2.5 text-white select-none"
-                                :class="day.isWeekend ? 'bg-[#0F172A]' : 'bg-[#EA580C]'">
+                                :class="day.isWeekend ? 'bg-[#F97316]' : 'bg-[#0F172A]'">
                                 <span class="font-display font-black text-4xl sm:text-[42px] leading-none tracking-tight">
                                     {{ day.dateNum }}
                                 </span>
@@ -407,9 +407,9 @@
                                 </span>
                             </div>
 
-                            <!-- กล่องขวา: ปิดระบบ = แดง (#DC2626) | วันเสาร์-อาทิตย์ = ส้มสด (#EA580C) | วันธรรมดา = น้ำเงินเข้ม (#0F172A) -->
+                            <!-- กล่องขวา: ปิดระบบ = แดง (#DC2626) | วันธรรมดา = ส้มสด (#F97316) | วันเสาร์-อาทิตย์ = น้ำเงินเข้ม (#1E3A8A) -->
                             <div class="flex-grow flex items-center justify-center px-3 py-2.5 relative"
-                                :class="day.isClosed ? 'bg-[#DC2626]' : (day.isWeekend ? 'bg-[#EA580C]' : 'bg-[#0F172A]')">
+                                :class="day.isClosed ? 'bg-[#DC2626]' : (day.isWeekend ? 'bg-[#1E3A8A]' : 'bg-[#F97316]')">
                                 
                                 <!-- ปุ่มแก้ไขเล็กๆ มุมขวาบนเมื่อเปิดโหมดแอดมิน (ซ่อนอัตโนมัติในรูป PNG) -->
                                 <button v-if="adminMode" data-html2canvas-ignore="true"
@@ -434,7 +434,7 @@
                                             ปิดระบบ
                                         </div>
                                         <div class="text-xs sm:text-sm font-bold text-white/95 mt-1">
-                                            ({{ day.closeReason || 'ระบบปิดบริการ' }})
+                                            ({{ day.closeReason || 'วันหยุดประจำเดือน' }})
                                         </div>
                                     </div>
                                 </div>
@@ -478,7 +478,7 @@
                                         </div>
                                     </div>
 
-                                    <div v-if="day.riders.length === 0" class="text-white/85 text-xs sm:text-sm font-bold text-center py-2">
+                                    <div v-if="day.riders.length === 0" class="text-white/95 text-xs sm:text-sm font-bold text-center py-2 text-outline-dark">
                                         ยังไม่มีไรเดอร์ลงเวร
                                     </div>
                                 </div>
@@ -500,7 +500,7 @@
             </div>
         </main>
 
-        <!-- ==================== MODALS (ทุกหน้าต่างใช้พื้นหลังขาว ตัวอักษรสีเข้มคมชัด 100%) ==================== -->
+        <!-- ==================== MODALS (เปิดเมื่อกดปุ่มเท่านั้น ไม่เด้งอัตโนมัติ) ==================== -->
 
         <!-- 1. Modal ปลดล็อกแอดมิน -->
         <div v-if="showAdminLoginModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-sm">
@@ -559,7 +559,7 @@
                     <!-- ช่องกรอกเหตุผลการปิดระบบ -->
                     <div v-if="editingDay.isClosed">
                         <label class="block text-xs font-extrabold text-slate-700 mb-1">ข้อความอธิบายการปิดระบบ:</label>
-                        <input type="text" v-model="editingDay.closeReason" placeholder="เช่น ระบบปิดบริการ, วันหยุดประจำเดือน"
+                        <input type="text" v-model="editingDay.closeReason" placeholder="เช่น วันหยุดประจำเดือน, ระบบปิดบริการ"
                             class="w-full bg-slate-100 text-slate-900 border-2 border-slate-300 rounded-xl px-3 py-2 text-sm font-bold outline-none focus:border-red-500">
                     </div>
 
@@ -626,7 +626,7 @@
                         </select>
 
                         <select v-model="rider.heart" class="bg-white text-slate-900 border border-slate-300 rounded-lg px-2 py-1.5 text-sm">
-                            <option value="💗">💗</option>
+                            <option value="🩷">🩷</option>
                             <option value="🧡">🧡</option>
                             <option value="💙">💙</option>
                             <option value="💚">💚</option>
@@ -748,13 +748,13 @@
             </div>
         </div>
 
-        <!-- 6. Modal เปลี่ยนรหัสผ่านแอดมิน (บันทึกลง Supabase settings key = 'admin_password') -->
+        <!-- 6. Modal เปลี่ยนรหัสแอดมิน (บันทึกลง Supabase settings key = 'admin_password') -->
         <div v-if="showChangePasswordModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-sm">
             <div class="bg-white text-slate-800 rounded-3xl shadow-2xl border-4 border-amber-400 w-full max-w-sm p-6 animate-slideUp">
                 <div class="w-12 h-12 bg-amber-100 text-amber-700 rounded-2xl flex items-center justify-center text-xl mb-3">
                     <i class="fa-solid fa-key"></i>
                 </div>
-                <h3 class="text-lg font-black text-slate-900 mb-1">เปลี่ยนรหัสผ่านแอดมิน</h3>
+                <h3 class="text-lg font-black text-slate-900 mb-1">เปลี่ยนรหัสแอดมิน</h3>
                 <p class="text-xs text-slate-600 mb-3">รหัสผ่านใหม่จะถูกบันทึกลง Supabase Cloud เพื่อให้จำและใช้ตรงกันทุกเครื่อง</p>
                 
                 <input type="text" v-model="newAdminPinInput" @keyup.enter="saveNewAdminPassword"
@@ -778,7 +778,7 @@
             </div>
         </div>
 
-        <!-- 7. Modal โค้ด SQL / ตั้งค่า Supabase -->
+        <!-- 7. Modal ตั้งค่า SQL / Supabase Setup -->
         <div v-if="showSqlModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-sm">
             <div class="bg-white text-slate-800 rounded-3xl shadow-2xl border-4 border-teal-600 w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh] animate-slideUp">
                 <div class="bg-teal-900 text-white px-5 py-4 flex items-center justify-between">
@@ -806,22 +806,7 @@
                                 <i class="fa-regular fa-copy"></i> คัดลอก SQL
                             </button>
                         </div>
-                        <pre id="sql-code-block" class="bg-slate-900 text-amber-300 p-3 rounded-xl overflow-x-auto font-mono text-[11px] leading-relaxed select-all">create table if not exists public.schedules (
-  month_key text primary key,
-  days jsonb not null default '[]'::jsonb,
-  updated_at timestamp with time zone default now()
-);
-create table if not exists public.settings (
-  key text primary key,
-  value jsonb not null,
-  updated_at timestamp with time zone default now()
-);
-alter table public.schedules enable row level security;
-alter table public.settings enable row level security;
-drop policy if exists "Public access schedules" on public.schedules;
-create policy "Public access schedules" on public.schedules for all using (true) with check (true);
-drop policy if exists "Public access settings" on public.settings;
-create policy "Public access settings" on public.settings for all using (true) with check (true);</pre>
+                        <pre class="bg-slate-900 text-amber-300 p-3 rounded-xl overflow-x-auto font-mono text-[11px] leading-relaxed select-all">{{ sqlSetupScript }}</pre>
                     </div>
                 </div>
 
@@ -842,12 +827,41 @@ create policy "Public access settings" on public.settings for all using (true) w
     <script>
         const { createApp, ref, computed, onMounted, onUnmounted } = Vue
 
-        // Hardcoded Supabase Cloud Credentials
+        // Pre-embedded Supabase Cloud Credentials
         const SUPABASE_URL = 'https://xqxsiapocrzmykzogjeu.supabase.co'
         const SUPABASE_KEY = 'sb_publishable_EyG8gR-RRd1d-GgSIMrT3Q_eSnTfJDm'
 
-        // Initialize Supabase JS v2 client immediately on load
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
+        // Safe Supabase JS v2 initialization wrapped in try/catch (avoid global 'supabase' name collision)
+        let supabaseClient = null
+        try {
+            if (window.supabase && typeof window.supabase.createClient === 'function') {
+                supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
+            }
+        } catch (initErr) {
+            console.warn('Supabase client init warning:', initErr)
+        }
+
+        // Multi-line SQL template literal (no unescaped string issues)
+        const SQL_SETUP_SCRIPT = `create table if not exists public.schedules (
+  month_key text primary key,
+  days jsonb not null default '[]'::jsonb,
+  updated_at timestamptz default now()
+);
+
+create table if not exists public.settings (
+  key text primary key,
+  value jsonb not null,
+  updated_at timestamptz default now()
+);
+
+alter table public.schedules enable row level security;
+alter table public.settings enable row level security;
+
+drop policy if exists "Public access schedules" on public.schedules;
+create policy "Public access schedules" on public.schedules for all using (true) with check (true);
+
+drop policy if exists "Public access settings" on public.settings;
+create policy "Public access settings" on public.settings for all using (true) with check (true);`
 
         createApp({
             setup() {
@@ -868,9 +882,9 @@ create policy "Public access settings" on public.settings for all using (true) w
                 const selectedRiderFilter = ref(null)
                 const isExporting = ref(false)
 
-                // ค่าเริ่มต้นของระบบ (กรณีฐานข้อมูลยังว่างเปล่า)
+                // รายชื่อไรเดอร์เริ่มต้นและสีหมวกกันน็อกประจำตัว
                 const defaultRiders = [
-                    { id: 1, name: 'พี่สาว', color: '#EC4899', heart: '💗', hairStyle: 'long', hasGlasses: false },
+                    { id: 1, name: 'พี่สาว', color: '#EC4899', heart: '🩷', hairStyle: 'long', hasGlasses: false },
                     { id: 2, name: 'เดียร์', color: '#F97316', heart: '🧡', hairStyle: 'short', hasGlasses: false },
                     { id: 3, name: 'กาย', color: '#3B82F6', heart: '💙', hairStyle: 'short', hasGlasses: true },
                     { id: 4, name: 'เน', color: '#22C55E', heart: '💚', hairStyle: 'long', hasGlasses: false },
@@ -880,14 +894,15 @@ create policy "Public access settings" on public.settings for all using (true) w
 
                 const riders = ref(JSON.parse(JSON.stringify(defaultRiders)))
                 const monthlyHolidays = ref([10, 20])
-                const adminPassword = ref('1234')
+                const adminPassword = ref(localStorage.getItem('wolf_admin_password') || '1234')
                 const monthlySchedules = ref({})
 
                 // สถานะการเชื่อมต่อ Supabase ('connecting' | 'connected' | 'sql_missing')
                 const dbStatus = ref('connecting')
                 const showSqlModal = ref(false)
+                const sqlSetupScript = SQL_SETUP_SCRIPT
 
-                // สถานะแอดมิน (เริ่มต้นเป็น Viewer Mode เสมอ)
+                // สถานะแอดมิน (เริ่มต้นเป็นโหมดดูตารางปกติเสมอ)
                 const adminMode = ref(false)
                 const showAdminLoginModal = ref(false)
                 const adminPinInput = ref('')
@@ -905,15 +920,15 @@ create policy "Public access settings" on public.settings for all using (true) w
 
                 const monthKey = computed(() => `${currentYear.value}-${String(currentMonth.value + 1).padStart(2, '0')}`)
 
-                // ตรวจสอบว่า Error จาก Supabase เกิดจากยังไม่มีตาราง SQL หรือไม่
+                // ตรวจสอบ Error กรณียังไม่ได้รัน SQL สร้างตาราง
                 const isMissingTableError = (err) => {
                     if (!err) return false
                     const msg = String(err.message || '').toLowerCase()
                     const code = String(err.code || '')
-                    return code === '42P01' || code === 'PGRST205' || msg.includes('does not exist') || msg.includes('schema cache')
+                    return code === '42P01' || code === 'PGRST205' || msg.includes('does not exist') || msg.includes('schema cache') || msg.includes('not found')
                 }
 
-                // สร้างตารางวันเริ่มต้นของเดือน (หยุดอัตโนมัติตาม monthlyHolidays เช่น 10, 20)
+                // สร้างตารางเริ่มต้นของเดือน (หยุดอัตโนมัติวันที่ 10 และ 20 ของทุกเดือน)
                 const buildDefaultDaysForMonth = (year, month) => {
                     const totalDays = new Date(year, month + 1, 0).getDate()
                     const days = []
@@ -940,20 +955,56 @@ create policy "Public access settings" on public.settings for all using (true) w
                             dayName: thaiDaysOfWeek[dow],
                             isWeekend,
                             isClosed: isHoliday,
-                            closeReason: isHoliday ? 'ระบบปิดบริการ' : '',
+                            closeReason: isHoliday ? 'วันหยุดประจำเดือน' : '',
                             riders: assigned
                         })
                     }
                     return days
                 }
 
-                // ดึงค่าตั้งค่าทั้งหมดจากตาราง settings บน Supabase
-                const fetchSettingsFromSupabase = async () => {
-                    const { data, error } = await supabase.from('settings').select('key, value')
-                    if (error) {
-                        if (isMissingTableError(error)) {
-                            dbStatus.value = 'sql_missing'
+                // โหลดข้อมูลสำรองจาก localStorage หากยังไม่มีตารางบน Supabase
+                const loadLocalFallback = () => {
+                    try {
+                        const savedRiders = localStorage.getItem('wolf_riders')
+                        if (savedRiders) {
+                            const parsed = JSON.parse(savedRiders)
+                            if (Array.isArray(parsed) && parsed.length > 0) riders.value = parsed
                         }
+                        const savedHolidays = localStorage.getItem('wolf_monthly_holidays')
+                        if (savedHolidays) {
+                            const parsedH = JSON.parse(savedHolidays)
+                            if (Array.isArray(parsedH)) monthlyHolidays.value = parsedH
+                        }
+                        const savedSchedules = localStorage.getItem('wolf_monthly_schedules')
+                        if (savedSchedules) {
+                            const parsedS = JSON.parse(savedSchedules)
+                            if (parsedS && typeof parsedS === 'object') monthlySchedules.value = parsedS
+                        }
+                    } catch (e) {
+                        console.warn('Local fallback read warning:', e)
+                    }
+                    if (!monthlySchedules.value[monthKey.value]) {
+                        monthlySchedules.value[monthKey.value] = buildDefaultDaysForMonth(currentYear.value, currentMonth.value)
+                    }
+                }
+
+                const saveLocalFallback = () => {
+                    try {
+                        localStorage.setItem('wolf_riders', JSON.stringify(riders.value))
+                        localStorage.setItem('wolf_monthly_holidays', JSON.stringify(monthlyHolidays.value))
+                        localStorage.setItem('wolf_monthly_schedules', JSON.stringify(monthlySchedules.value))
+                        localStorage.setItem('wolf_admin_password', adminPassword.value)
+                    } catch (e) {
+                        console.warn('Local fallback write warning:', e)
+                    }
+                }
+
+                // ดึงค่าตั้งค่าทั้งหมดจากตาราง public.settings บน Supabase
+                const fetchSettingsFromSupabase = async () => {
+                    if (!supabaseClient) throw new Error('Supabase client unavailable')
+                    const { data, error } = await supabaseClient.from('settings').select('key, value')
+                    if (error) {
+                        if (isMissingTableError(error)) dbStatus.value = 'sql_missing'
                         throw error
                     }
 
@@ -963,7 +1014,7 @@ create policy "Public access settings" on public.settings for all using (true) w
                     if (Array.isArray(data)) {
                         data.forEach(row => {
                             foundKeys.add(row.key)
-                            if (row.key === 'riders' && Array.isArray(row.value)) {
+                            if (row.key === 'riders' && Array.isArray(row.value) && row.value.length > 0) {
                                 riders.value = row.value.map(r => ({
                                     ...r,
                                     color: r.color || r.helmetColor || '#3B82F6'
@@ -974,11 +1025,12 @@ create policy "Public access settings" on public.settings for all using (true) w
                             }
                             if (row.key === 'admin_password' && row.value !== null && row.value !== undefined) {
                                 adminPassword.value = String(row.value)
+                                localStorage.setItem('wolf_admin_password', adminPassword.value)
                             }
                         })
                     }
 
-                    // หากยังไม่มีค่าเริ่มต้นใน settings ให้บันทึกค่าเริ่มต้นขึ้น Cloud เพื่อให้ทุกเครื่องเห็นตรงกัน
+                    // บันทึกค่าเริ่มต้นขึ้น settings หากยังไม่มีใน Cloud เพื่อให้ทุกเครื่องตรงกัน
                     const initialUpserts = []
                     if (!foundKeys.has('riders')) {
                         initialUpserts.push({ key: 'riders', value: riders.value, updated_at: new Date().toISOString() })
@@ -990,22 +1042,22 @@ create policy "Public access settings" on public.settings for all using (true) w
                         initialUpserts.push({ key: 'admin_password', value: adminPassword.value, updated_at: new Date().toISOString() })
                     }
                     if (initialUpserts.length > 0) {
-                        await supabase.from('settings').upsert(initialUpserts, { onConflict: 'key' })
+                        await supabaseClient.from('settings').upsert(initialUpserts, { onConflict: 'key' })
                     }
+                    saveLocalFallback()
                 }
 
-                // ดึงตารางเดือนที่เลือกจากตาราง schedules บน Supabase
+                // ดึงตารางเดือนที่เลือกจาก public.schedules บน Supabase
                 const fetchScheduleFromSupabase = async (targetMonthKey, year, month) => {
-                    const { data, error } = await supabase
+                    if (!supabaseClient) throw new Error('Supabase client unavailable')
+                    const { data, error } = await supabaseClient
                         .from('schedules')
                         .select('days')
                         .eq('month_key', targetMonthKey)
                         .maybeSingle()
 
                     if (error) {
-                        if (isMissingTableError(error)) {
-                            dbStatus.value = 'sql_missing'
-                        }
+                        if (isMissingTableError(error)) dbStatus.value = 'sql_missing'
                         throw error
                     }
 
@@ -1013,56 +1065,67 @@ create policy "Public access settings" on public.settings for all using (true) w
                     if (data && Array.isArray(data.days) && data.days.length > 0) {
                         monthlySchedules.value[targetMonthKey] = data.days
                     } else {
-                        // สร้างตารางเริ่มต้นของเดือนนี้และบันทึกลง Supabase ทันทีเพื่อให้ทุกคนเห็นตรงกัน
                         const generated = buildDefaultDaysForMonth(year, month)
                         monthlySchedules.value[targetMonthKey] = generated
-                        await supabase.from('schedules').upsert({
+                        await supabaseClient.from('schedules').upsert({
                             month_key: targetMonthKey,
                             days: generated,
                             updated_at: new Date().toISOString()
                         }, { onConflict: 'month_key' })
                     }
+                    saveLocalFallback()
                 }
 
-                // โหลดข้อมูลทั้งหมดจาก Supabase Cloud
+                // ซิงค์ข้อมูลทั้งหมดจาก Supabase Cloud แบบไม่บล็อกการแสดงผลหน้าจอ
                 const syncAllFromCloud = async () => {
                     dbStatus.value = 'connecting'
                     try {
                         await fetchSettingsFromSupabase()
                         await fetchScheduleFromSupabase(monthKey.value, currentYear.value, currentMonth.value)
                     } catch (err) {
-                        console.warn('Supabase sync notice:', err)
-                        if (!monthlySchedules.value[monthKey.value]) {
-                            monthlySchedules.value[monthKey.value] = buildDefaultDaysForMonth(currentYear.value, currentMonth.value)
+                        console.warn('Supabase sync fallback:', err)
+                        if (dbStatus.value !== 'sql_missing') {
+                            dbStatus.value = 'sql_missing'
                         }
+                        loadLocalFallback()
                     }
                 }
 
-                // สมัครรับการเปลี่ยนแปลงแบบ Real-time จาก Supabase (แก้ไขเครื่องหนึ่ง อีกเครื่องอัปเดตทันที)
+                // เชื่อมต่อ Supabase Realtime เพื่อให้อัปเดตตารางทุกเครื่องแบบสดๆ
                 let realtimeChannel = null
                 const setupRealtimeSubscription = () => {
-                    realtimeChannel = supabase
-                        .channel('wolf-delivery-realtime')
-                        .on('postgres_changes', { event: '*', schema: 'public', table: 'schedules' }, (payload) => {
-                            if (payload.new && payload.new.month_key && Array.isArray(payload.new.days)) {
-                                monthlySchedules.value[payload.new.month_key] = payload.new.days
-                            }
-                        })
-                        .on('postgres_changes', { event: '*', schema: 'public', table: 'settings' }, (payload) => {
-                            if (!payload.new) return
-                            const { key, value } = payload.new
-                            if (key === 'riders' && Array.isArray(value)) {
-                                riders.value = value.map(r => ({ ...r, color: r.color || r.helmetColor || '#3B82F6' }))
-                            }
-                            if (key === 'monthly_holidays' && Array.isArray(value)) {
-                                monthlyHolidays.value = value
-                            }
-                            if (key === 'admin_password' && value !== null && value !== undefined) {
-                                adminPassword.value = String(value)
-                            }
-                        })
-                        .subscribe()
+                    if (!supabaseClient) return
+                    try {
+                        realtimeChannel = supabaseClient
+                            .channel('wolf-delivery-live-sync')
+                            .on('postgres_changes', { event: '*', schema: 'public', table: 'schedules' }, (payload) => {
+                                if (payload.new && payload.new.month_key && Array.isArray(payload.new.days)) {
+                                    monthlySchedules.value[payload.new.month_key] = payload.new.days
+                                    saveLocalFallback()
+                                }
+                            })
+                            .on('postgres_changes', { event: '*', schema: 'public', table: 'settings' }, (payload) => {
+                                if (!payload.new) return
+                                const { key, value } = payload.new
+                                if (key === 'riders' && Array.isArray(value)) {
+                                    riders.value = value.map(r => ({ ...r, color: r.color || r.helmetColor || '#3B82F6' }))
+                                }
+                                if (key === 'monthly_holidays' && Array.isArray(value)) {
+                                    monthlyHolidays.value = value
+                                }
+                                if (key === 'admin_password' && value !== null && value !== undefined) {
+                                    adminPassword.value = String(value)
+                                }
+                                saveLocalFallback()
+                            })
+                            .subscribe()
+                    } catch (rtErr) {
+                        console.warn('Realtime subscription warning:', rtErr)
+                    }
                 }
+
+                // สร้างตารางเริ่มต้นในหน่วยความจำทันทีก่อน Mount เพื่อให้หน้าเว็บแสดงผลทันที 100%
+                monthlySchedules.value[monthKey.value] = buildDefaultDaysForMonth(currentYear.value, currentMonth.value)
 
                 onMounted(async () => {
                     await syncAllFromCloud()
@@ -1070,19 +1133,20 @@ create policy "Public access settings" on public.settings for all using (true) w
                 })
 
                 onUnmounted(() => {
-                    if (realtimeChannel) {
-                        supabase.removeChannel(realtimeChannel)
+                    if (supabaseClient && realtimeChannel) {
+                        try { supabaseClient.removeChannel(realtimeChannel) } catch (e) {}
                     }
                 })
 
                 const onMonthOrYearChange = async () => {
                     selectedRiderFilter.value = null
+                    if (!monthlySchedules.value[monthKey.value]) {
+                        monthlySchedules.value[monthKey.value] = buildDefaultDaysForMonth(currentYear.value, currentMonth.value)
+                    }
                     try {
                         await fetchScheduleFromSupabase(monthKey.value, currentYear.value, currentMonth.value)
                     } catch (err) {
-                        if (!monthlySchedules.value[monthKey.value]) {
-                            monthlySchedules.value[monthKey.value] = buildDefaultDaysForMonth(currentYear.value, currentMonth.value)
-                        }
+                        loadLocalFallback()
                     }
                 }
 
@@ -1096,7 +1160,7 @@ create policy "Public access settings" on public.settings for all using (true) w
                     }
                 }
 
-                // คำนวณรายการวันที่แสดงผล
+                // รายการวันที่แสดงผลในโปสเตอร์
                 const currentMonthDays = computed(() => monthlySchedules.value[monthKey.value] || [])
 
                 const periodFilteredDays = computed(() => {
@@ -1135,7 +1199,7 @@ create policy "Public access settings" on public.settings for all using (true) w
                     return periodFilteredDays.value.filter(d => !d.isClosed && d.riders.includes(riderName)).length
                 }
 
-                // ==================== ADMIN LOCK & PASSWORD SYNC ====================
+                // ==================== ADMIN LOCK & CLOUD PASSWORD SYNC ====================
                 const openAdminModal = () => {
                     adminPinInput.value = ''
                     adminLoginError.value = ''
@@ -1153,18 +1217,20 @@ create policy "Public access settings" on public.settings for all using (true) w
                     adminLoginError.value = ''
 
                     try {
-                        // ดึงรหัสผ่านล่าสุดจาก Supabase settings ก่อนตรวจสอบเสมอ (ซิงค์ข้ามเครื่อง 100%)
-                        const { data, error } = await supabase
-                            .from('settings')
-                            .select('value')
-                            .eq('key', 'admin_password')
-                            .maybeSingle()
+                        if (supabaseClient) {
+                            const { data, error } = await supabaseClient
+                                .from('settings')
+                                .select('value')
+                                .eq('key', 'admin_password')
+                                .maybeSingle()
 
-                        if (!error && data && data.value !== null && data.value !== undefined) {
-                            adminPassword.value = String(data.value)
+                            if (!error && data && data.value !== null && data.value !== undefined) {
+                                adminPassword.value = String(data.value)
+                                localStorage.setItem('wolf_admin_password', adminPassword.value)
+                            }
                         }
                     } catch (e) {
-                        console.warn('Fetch latest admin_password fallback:', e)
+                        console.warn('Verify password fetch fallback:', e)
                     } finally {
                         isVerifyingPin.value = false
                     }
@@ -1184,7 +1250,7 @@ create policy "Public access settings" on public.settings for all using (true) w
                     showToast('ล็อกหน้าจอเป็นโหมดดูตารางปกติแล้ว', 'info')
                 }
 
-                // เปลี่ยนรหัสผ่านแอดมินและบันทึกลง Supabase settings (key = 'admin_password')
+                // เปลี่ยนรหัสผ่านแอดมินและบันทึกลง Supabase settings (key: 'admin_password') + localStorage
                 const showChangePasswordModal = ref(false)
                 const newAdminPinInput = ref('')
                 const passwordChangeError = ref('')
@@ -1206,8 +1272,13 @@ create policy "Public access settings" on public.settings for all using (true) w
                     isSavingPassword.value = true
                     passwordChangeError.value = ''
 
+                    // บันทึกสำรองลงเครื่องทันที
+                    adminPassword.value = nextPin
+                    localStorage.setItem('wolf_admin_password', nextPin)
+
                     try {
-                        const { error } = await supabase
+                        if (!supabaseClient) throw new Error('Supabase client unavailable')
+                        const { error } = await supabaseClient
                             .from('settings')
                             .upsert({
                                 key: 'admin_password',
@@ -1218,7 +1289,7 @@ create policy "Public access settings" on public.settings for all using (true) w
                         if (error) {
                             if (isMissingTableError(error)) {
                                 dbStatus.value = 'sql_missing'
-                                passwordChangeError.value = 'ยังไม่ได้สร้างตารางใน Supabase กรุณากดปุ่ม "โค้ด SQL / ตั้งค่า" แล้วรัน SQL ก่อนครับ'
+                                passwordChangeError.value = 'บันทึกในเครื่องนี้แล้ว แต่ยังซิงค์ Cloud ไม่ได้เพราะยังไม่ได้สร้างตาราง SQL'
                             } else {
                                 passwordChangeError.value = 'ไม่สามารถบันทึกขึ้น Cloud ได้: ' + error.message
                             }
@@ -1226,11 +1297,10 @@ create policy "Public access settings" on public.settings for all using (true) w
                         }
 
                         dbStatus.value = 'connected'
-                        adminPassword.value = nextPin
                         showChangePasswordModal.value = false
-                        showToast('เปลี่ยนรหัสผ่านแอดมินและบันทึกขึ้น Cloud เรียบร้อย!', 'success')
+                        showToast('เปลี่ยนรหัสแอดมินและบันทึกขึ้น Cloud เรียบร้อย!', 'success')
                     } catch (err) {
-                        passwordChangeError.value = 'เกิดข้อผิดพลาดในการเชื่อมต่อฐานข้อมูล'
+                        passwordChangeError.value = 'บันทึกในเครื่องนี้แล้ว แต่ไม่สามารถเชื่อมต่อ Supabase Cloud ได้'
                     } finally {
                         isSavingPassword.value = false
                     }
@@ -1238,39 +1308,53 @@ create policy "Public access settings" on public.settings for all using (true) w
 
                 // ==================== SAVE SCHEDULE & SETTINGS TO SUPABASE ====================
                 const saveCurrentScheduleToCloud = async () => {
-                    const { error } = await supabase
-                        .from('schedules')
-                        .upsert({
-                            month_key: monthKey.value,
-                            days: monthlySchedules.value[monthKey.value],
-                            updated_at: new Date().toISOString()
-                        }, { onConflict: 'month_key' })
+                    saveLocalFallback()
+                    if (!supabaseClient) return false
+                    try {
+                        const { error } = await supabaseClient
+                            .from('schedules')
+                            .upsert({
+                                month_key: monthKey.value,
+                                days: monthlySchedules.value[monthKey.value],
+                                updated_at: new Date().toISOString()
+                            }, { onConflict: 'month_key' })
 
-                    if (error) {
-                        if (isMissingTableError(error)) dbStatus.value = 'sql_missing'
-                        showToast('บันทึกในหน้าจอแล้ว แต่ซิงค์ Cloud ไม่สำเร็จ (กรุณารัน SQL)', 'error')
+                        if (error) {
+                            if (isMissingTableError(error)) dbStatus.value = 'sql_missing'
+                            showToast('บันทึกในหน้าจอแล้ว (กรุณารัน SQL เพื่อเปิด Cloud Sync)', 'error')
+                            return false
+                        }
+                        dbStatus.value = 'connected'
+                        return true
+                    } catch (e) {
+                        showToast('บันทึกในหน้าจอแล้ว แต่ซิงค์ Cloud ไม่สำเร็จ', 'error')
                         return false
                     }
-                    dbStatus.value = 'connected'
-                    return true
                 }
 
                 const saveSettingKeyToCloud = async (key, value) => {
-                    const { error } = await supabase
-                        .from('settings')
-                        .upsert({
-                            key,
-                            value,
-                            updated_at: new Date().toISOString()
-                        }, { onConflict: 'key' })
+                    saveLocalFallback()
+                    if (!supabaseClient) return false
+                    try {
+                        const { error } = await supabaseClient
+                            .from('settings')
+                            .upsert({
+                                key,
+                                value,
+                                updated_at: new Date().toISOString()
+                            }, { onConflict: 'key' })
 
-                    if (error) {
-                        if (isMissingTableError(error)) dbStatus.value = 'sql_missing'
-                        showToast('บันทึกในหน้าจอแล้ว แต่ซิงค์ Cloud ไม่สำเร็จ (กรุณารัน SQL)', 'error')
+                        if (error) {
+                            if (isMissingTableError(error)) dbStatus.value = 'sql_missing'
+                            showToast('บันทึกในหน้าจอแล้ว (กรุณารัน SQL เพื่อเปิด Cloud Sync)', 'error')
+                            return false
+                        }
+                        dbStatus.value = 'connected'
+                        return true
+                    } catch (e) {
+                        showToast('บันทึกในหน้าจอแล้ว แต่ซิงค์ Cloud ไม่สำเร็จ', 'error')
                         return false
                     }
-                    dbStatus.value = 'connected'
-                    return true
                 }
 
                 // แก้ไขเวรรายวัน
@@ -1338,12 +1422,19 @@ create policy "Public access settings" on public.settings for all using (true) w
                 }
                 const saveMonthlyHolidaysConfig = async () => {
                     const days = monthlySchedules.value[monthKey.value] || []
+                    const names = riders.value.map(r => r.name)
                     days.forEach(d => {
                         const num = Number(d.dateNum)
                         if (monthlyHolidays.value.includes(num)) {
                             d.isClosed = true
-                            d.closeReason = d.closeReason || 'ระบบปิดบริการ'
+                            d.closeReason = d.closeReason || 'วันหยุดประจำเดือน'
                             d.riders = []
+                        } else if (d.isClosed && d.closeReason === 'วันหยุดประจำเดือน') {
+                            d.isClosed = false
+                            d.closeReason = ''
+                            if (d.riders.length === 0 && names.length > 0) {
+                                d.riders = [names[num % names.length], names[(num + 1) % names.length]]
+                            }
                         }
                     })
                     showHolidayModal.value = false
@@ -1394,19 +1485,22 @@ create policy "Public access settings" on public.settings for all using (true) w
                     }
                 }
 
-                // คัดลอก SQL (รองรับ iFrame ด้วย document.execCommand)
+                // คัดลอก SQL ด้วย document.execCommand('copy')
                 const copySqlCode = () => {
-                    const sqlText = document.getElementById('sql-code-block')?.innerText || ''
-                    const textarea = document.createElement('textarea')
-                    textarea.value = sqlText
-                    document.body.appendChild(textarea)
-                    textarea.select()
-                    document.execCommand('copy')
-                    document.body.removeChild(textarea)
-                    showToast('คัดลอกคำสั่ง SQL เรียบร้อยแล้ว!', 'success')
+                    try {
+                        const textarea = document.createElement('textarea')
+                        textarea.value = SQL_SETUP_SCRIPT
+                        document.body.appendChild(textarea)
+                        textarea.select()
+                        document.execCommand('copy')
+                        document.body.removeChild(textarea)
+                        showToast('คัดลอกคำสั่ง SQL เรียบร้อยแล้ว!', 'success')
+                    } catch (e) {
+                        showToast('ไม่สามารถคัดลอกอัตโนมัติได้ กรุณาลากคลุมดำเพื่อคัดลอก', 'error')
+                    }
                 }
 
-                // ส่งออกรูปภาพ PNG ด้วย html2canvas scale 2
+                // ส่งออกรูปภาพ PNG ด้วย html2canvas
                 const exportPosterPng = async () => {
                     const target = document.getElementById('poster-area')
                     if (!target) return
@@ -1419,7 +1513,7 @@ create policy "Public access settings" on public.settings for all using (true) w
                         const canvas = await html2canvas(target, {
                             scale: 2,
                             useCORS: true,
-                            backgroundColor: '#FEF08A'
+                            backgroundColor: '#FEF9C3'
                         })
                         const link = document.createElement('a')
                         link.download = `WolfDelivery-${thaiMonths[currentMonth.value]}-${currentYear.value + 543}.png`
@@ -1438,7 +1532,7 @@ create policy "Public access settings" on public.settings for all using (true) w
                 return {
                     thaiMonths, currentMonth, currentYear, availableYears,
                     periodFilter, selectedRiderFilter, isExporting,
-                    riders, monthlyHolidays, dbStatus, showSqlModal,
+                    riders, monthlyHolidays, dbStatus, showSqlModal, sqlSetupScript,
                     adminMode, showAdminLoginModal, adminPinInput, adminLoginError, isVerifyingPin,
                     toast, currentMonthDays, periodFilteredDays, displayedDays, posterDateRangeLabel,
                     onMonthOrYearChange, retrySupabaseSync, getRiderInfo, getRiderShiftCount,
