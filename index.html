@@ -3,18 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Wolf Delivery - ตารางวิ่งงานไรเดอร์อัจฉริยะ (Supabase Cloud)</title>
+    <title>Wolf Delivery - ตารางวิ่งงานไรเดอร์</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Google Fonts: Prompt -->
-    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Google Fonts: Prompt & Kanit -->
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@500;700;800;900&family=Prompt:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <!-- Font Awesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Vue.js 3 -->
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
-    <!-- html2canvas for Export Image -->
+    <!-- html2canvas for Export PNG -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <!-- Supabase JS Client -->
+    <!-- Supabase JS Client v2 -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
         tailwind.config = {
@@ -22,15 +22,18 @@
                 extend: {
                     fontFamily: {
                         sans: ['Prompt', 'sans-serif'],
+                        display: ['Kanit', 'Prompt', 'sans-serif'],
                     },
                     colors: {
                         wolf: {
-                            dark: '#0F172A',
-                            blue: '#1E3A8A',
-                            orange: '#F97316',
-                            amber: '#F59E0B',
-                            yellowBg: '#FEF9C3',
-                            cardOrange: '#EA580C',
+                            navy: '#0F2952',
+                            navyLight: '#1E3A8A',
+                            orange: '#EA580C',
+                            orangeBright: '#F97316',
+                            red: '#DC2626',
+                            goldTop: '#FEF08A',
+                            goldMid: '#FDE047',
+                            goldBot: '#FACC15',
                         }
                     }
                 }
@@ -41,470 +44,1386 @@
         body {
             font-family: 'Prompt', sans-serif;
             background-color: #FEF3C7;
-            background-image: radial-gradient(#FDE68A 1px, transparent 1px);
-            background-size: 24px 24px;
         }
-        .card-shadow {
-            box-shadow: 0 8px 25px -5px rgba(249, 115, 22, 0.25), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        /* พื้นหลังโปสเตอร์สีเหลืองทองอบอุ่นเหมือนภาพต้นฉบับ */
+        .poster-bg {
+            background: linear-gradient(180deg, #FEF08A 0%, #FDE047 50%, #FACC15 100%);
         }
-        ::-webkit-scrollbar {
-            width: 8px;
-            height: 8px;
+        /* สไตล์ตัวอักษรหัวข้อใหญ่แบบสติกเกอร์ขอบขาว */
+        .title-sticker {
+            font-family: 'Kanit', 'Prompt', sans-serif;
+            color: #0F2952;
+            text-shadow:
+                -3px -3px 0 #FFFFFF,
+                 3px -3px 0 #FFFFFF,
+                -3px  3px 0 #FFFFFF,
+                 3px  3px 0 #FFFFFF,
+                 0px -3px 0 #FFFFFF,
+                 0px  3px 0 #FFFFFF,
+                -3px  0px 0 #FFFFFF,
+                 3px  0px 0 #FFFFFF,
+                 0px  5px 10px rgba(15, 41, 82, 0.25);
         }
-        ::-webkit-scrollbar-track {
-            background: #FEF3C7;
+        /* ตัวอักษรสีขาวมีขอบเงาเข้มให้อ่านง่ายบนพื้นสีส้มและแดง */
+        .text-outline-dark {
+            text-shadow:
+                -1.5px -1.5px 0 #0F172A,
+                 1.5px -1.5px 0 #0F172A,
+                -1.5px  1.5px 0 #0F172A,
+                 1.5px  1.5px 0 #0F172A,
+                 0px    2px   4px rgba(0, 0, 0, 0.45);
         }
-        ::-webkit-scrollbar-thumb {
-            background: #F97316;
-            border-radius: 4px;
+        .poster-card-shadow {
+            box-shadow: 0 6px 14px -2px rgba(15, 41, 82, 0.22);
+        }
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-slideUp {
+            animation: slideUp 0.25s ease-out forwards;
+        }
+        @media print {
+            .no-print { display: none !important; }
+            body { background: #FEF08A !important; }
         }
     </style>
 </head>
-<body class="min-h-screen text-slate-800 antialiased">
+<body class="min-h-screen text-slate-900 antialiased selection:bg-orange-500 selection:text-white">
     <div id="app" class="flex flex-col min-h-screen">
-        
-        <!-- Header Section -->
-        <header class="bg-gradient-to-r from-slate-900 via-blue-950 to-slate-900 text-white shadow-xl border-b-4 border-amber-400 relative overflow-hidden">
-            <div class="absolute -right-10 -bottom-10 opacity-10 pointer-events-none text-9xl">
-                <i class="fa-solid fa-wolf-pack-battalion"></i>
+
+        <!-- Toast Notification (แทน alert() ทั้งหมด) -->
+        <div v-if="toast.show" class="fixed bottom-5 right-5 z-[100] max-w-sm animate-slideUp no-print">
+            <div class="px-4 py-3 rounded-2xl shadow-2xl border-2 flex items-center gap-3 text-sm font-bold"
+                :class="{
+                    'bg-emerald-600 text-white border-emerald-300': toast.type === 'success',
+                    'bg-red-600 text-white border-red-300': toast.type === 'error',
+                    'bg-slate-900 text-amber-300 border-amber-400': toast.type === 'info'
+                }">
+                <i class="text-lg" :class="{
+                    'fa-solid fa-circle-check': toast.type === 'success',
+                    'fa-solid fa-circle-exclamation': toast.type === 'error',
+                    'fa-solid fa-circle-info': toast.type === 'info'
+                }"></i>
+                <span>{{ toast.message }}</span>
             </div>
-            
-            <div class="max-w-7xl mx-auto px-4 py-6 sm:py-8 flex flex-col md:flex-row items-center justify-between gap-6 relative z-10">
+        </div>
+
+        <!-- Top Control Bar (สำหรับเลือกเดือน/ช่วงวัน กรองไรเดอร์ ส่งออกรูป และปลดล็อกแอดมิน) -->
+        <nav class="bg-slate-900 text-white border-b-4 border-amber-400 sticky top-0 z-40 shadow-lg no-print">
+            <div class="max-w-5xl mx-auto px-3 sm:px-4 py-2.5 flex flex-wrap items-center justify-between gap-2.5">
                 
-                <!-- Left Mascot & DB Status -->
-                <div class="flex items-center gap-3">
-                    <div class="hidden lg:flex items-center gap-3 bg-white/10 px-4 py-2 rounded-2xl backdrop-blur-sm border border-white/15">
-                        <div class="w-12 h-12 bg-orange-500 rounded-full flex items-center justify-center text-2xl shadow-lg ring-2 ring-amber-400">
-                            🛵
-                        </div>
-                        <div>
-                            <p class="text-xs text-amber-300 font-semibold tracking-wide">WOLF RIDER</p>
-                            <p class="text-xs font-bold text-white flex items-center gap-1.5 mt-0.5">
-                                <span class="w-2 h-2 rounded-full" :class="isSupabaseConnected ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'"></span>
-                                {{ isSupabaseConnected ? 'Supabase Sync สำเร็จ' : 'Local Storage Mode' }}
-                            </p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Center Title & Month / Year Controls -->
-                <div class="text-center">
-                    <div class="inline-flex items-center gap-2 bg-amber-400 text-slate-900 px-4 py-1.5 rounded-full font-extrabold text-sm mb-3 shadow-md">
-                        <i class="fa-solid fa-shield-dog text-base"></i>
-                        <span>WolfDelivery Cloud</span>
-                    </div>
-                    <h1 class="text-3xl sm:text-5xl font-black tracking-tight text-white drop-shadow-md">
-                        ตารางวิ่งงานกลางวัน
-                    </h1>
-                    
-                    <!-- Month & Year Selector Bar -->
-                    <div class="mt-3 flex flex-wrap items-center justify-center gap-2">
-                        <div class="inline-flex items-center gap-2 bg-slate-800/90 px-4 py-2 rounded-xl border border-amber-400/50 text-amber-300 font-bold text-base shadow-inner">
-                            <i class="fa-regular fa-calendar-days text-amber-400"></i>
-                            <select v-model="currentMonth" @change="onMonthOrYearChange" class="bg-slate-900 text-amber-300 border border-amber-400/40 rounded px-2 py-1 outline-none text-sm font-bold cursor-pointer">
-                                <option v-for="(m, index) in thaiMonths" :value="index" :key="index">{{ m }}</option>
-                            </select>
-                            <select v-model="currentYear" @change="onMonthOrYearChange" class="bg-slate-900 text-amber-300 border border-amber-400/40 rounded px-2 py-1 outline-none text-sm font-bold cursor-pointer">
-                                <option v-for="y in availableYears" :value="y" :key="y">พ.ศ. {{ y + 543 }} (ค.ศ. {{ y }})</option>
-                            </select>
-                        </div>
-
-                        <!-- Date Range Sub-filter -->
-                        <div class="inline-flex items-center gap-1.5 bg-slate-800/90 px-3 py-2 rounded-xl border border-amber-400/50 text-white font-semibold text-xs shadow-inner">
-                            <span>ช่วงวันที่:</span>
-                            <select v-model="dateRangeFilter" class="bg-slate-900 text-white border border-amber-400/40 rounded px-2 py-1 outline-none text-xs cursor-pointer">
-                                <option value="all">ทั้งเดือน</option>
-                                <option value="1-15">วันที่ 1 - 15</option>
-                                <option value="16-end">วันที่ 16 - สิ้นเดือน</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Right Action Buttons -->
-                <div class="flex items-center gap-3">
-                    <button @click="openSupabaseConfig" class="px-3.5 py-2.5 rounded-xl font-bold text-xs bg-blue-600 hover:bg-blue-500 text-white shadow flex items-center gap-1.5 transition-all">
-                        <i class="fa-solid fa-database"></i>
-                        <span>ตั้งค่า Supabase</span>
-                    </button>
-
-                    <!-- Admin Mode Button -->
-                    <button @click="toggleAdminMode" 
-                        class="px-4 py-2.5 rounded-xl font-bold text-sm transition-all duration-300 flex items-center gap-2 shadow-lg"
-                        :class="adminMode ? 'bg-emerald-500 text-white ring-4 ring-emerald-300 animate-pulse' : 'bg-slate-800 text-amber-300 hover:bg-slate-700 border border-amber-400/40'">
-                        <i :class="adminMode ? 'fa-solid fa-lock-open' : 'fa-solid fa-lock'"></i>
-                        <span>{{ adminMode ? 'แอดมิน (เปิด)' : 'เข้าสู่ระบบแอดมิน' }}</span>
-                    </button>
-                </div>
-
-            </div>
-        </header>
-
-        <!-- Rider Legend Bar & Admin Tools -->
-        <section class="bg-white/90 backdrop-blur-md shadow-md border-b border-amber-200 sticky top-0 z-40">
-            <div class="max-w-7xl mx-auto px-4 py-3 flex flex-col md:flex-row items-center justify-between gap-4">
-                
-                <div class="flex items-center gap-2 text-slate-700 font-bold text-sm">
-                    <i class="fa-solid fa-key text-amber-500"></i>
-                    <span>ไรเดอร์ (คลิกเพื่อกรองเวร):</span>
-                    <button v-if="selectedRiderFilter" @click="selectedRiderFilter = null" class="text-xs bg-slate-200 hover:bg-slate-300 px-2 py-1 rounded-full text-slate-700 ml-1">
-                        <i class="fa-solid fa-xmark mr-1"></i> ล้างตัวกรอง
-                    </button>
-                </div>
-
-                <!-- Rider Pills -->
-                <div class="flex flex-wrap items-center justify-center gap-2 sm:gap-3">
-                    <button v-for="rider in riders" :key="rider.id"
-                        @click="selectedRiderFilter = selectedRiderFilter === rider.name ? null : rider.name"
-                        class="flex items-center gap-2 px-3.5 py-1.5 rounded-full border transition-all duration-200 shadow-sm"
-                        :class="[
-                            selectedRiderFilter === rider.name ? 'ring-4 ring-offset-1 ' + rider.ringColor + ' scale-105' : 'hover:scale-105',
-                            rider.bgBadgeClass
-                        ]">
-                        <span class="text-base">{{ rider.avatar }}</span>
-                        <span class="font-bold text-xs sm:text-sm">{{ rider.name }}</span>
-                        <span class="text-xs bg-white/70 px-1.5 py-0.2 rounded-full font-semibold">{{ getRiderShiftCount(rider.name) }}</span>
-                    </button>
-                </div>
-
-                <!-- Admin Action Buttons -->
-                <div v-if="adminMode" class="flex flex-wrap items-center gap-2">
-                    <button @click="openRiderManager" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow flex items-center gap-1.5">
-                        <i class="fa-solid fa-users-gear"></i> จัดการไรเดอร์
-                    </button>
-                    <button @click="openHolidayManager" class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow flex items-center gap-1.5">
-                        <i class="fa-solid fa-calendar-minus"></i> วันหยุด (10, 20)
-                    </button>
-                    <button @click="openEmergencyModal" class="bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow flex items-center gap-1.5">
-                        <i class="fa-solid fa-triangle-exclamation"></i> ปิดระบบฉุกเฉิน
-                    </button>
-                    <button @click="syncDataToSupabase" :disabled="isSyncing" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow flex items-center gap-1.5">
-                        <i :class="isSyncing ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-cloud-arrow-up'"></i> ซิงค์ข้อมูลขึ้น Cloud
-                    </button>
-                </div>
-
-            </div>
-        </section>
-
-        <!-- Main Schedule Grid Content -->
-        <main class="max-w-7xl mx-auto px-4 py-8 flex-grow w-full">
-            
-            <div id="schedule-export-area" class="bg-amber-50/50 p-2 sm:p-6 rounded-3xl">
-                
-                <!-- Export Header Title inside capture area -->
-                <div class="text-center mb-6 bg-gradient-to-r from-slate-900 via-blue-950 to-slate-900 text-white p-4 rounded-2xl shadow-md border-2 border-amber-400">
-                    <h2 class="text-2xl sm:text-3xl font-black text-amber-300">Wolf Delivery ตารางวิ่งงานกลางวัน</h2>
-                    <p class="text-sm font-semibold text-white/90 mt-1">ประจำเดือน <span class="text-amber-400">{{ thaiMonths[currentMonth] }} พ.ศ. {{ currentYear + 543 }}</span></p>
-                </div>
-
-                <!-- Filter Notification if active -->
-                <div v-if="selectedRiderFilter" class="mb-6 bg-amber-100 border-l-4 border-orange-500 p-4 rounded-r-xl flex items-center justify-between shadow-sm">
-                    <div class="flex items-center gap-3">
-                        <div class="text-2xl">🔍</div>
-                        <div>
-                            <p class="font-bold text-slate-800">กำลังแสดงตารางงานของ: <span class="text-orange-600 font-extrabold text-lg">{{ selectedRiderFilter }}</span></p>
-                            <p class="text-xs text-slate-600">พบทั้งหมด {{ filteredDays.length }} วันในเดือนนี้</p>
-                        </div>
-                    </div>
-                    <button @click="selectedRiderFilter = null" class="text-sm font-semibold text-orange-600 hover:underline">แสดงทั้งหมด</button>
-                </div>
-
-                <!-- Grid of Days -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-                    <div v-for="(day, index) in filteredDays" :key="day.dateStr" 
-                        class="rounded-2xl overflow-hidden card-shadow border-2 border-amber-300/60 bg-white transition-all duration-300 hover:shadow-2xl flex flex-col sm:flex-row"
-                        :class="{'ring-4 ring-orange-400': isRiderWorkingOnDay(day, selectedRiderFilter)}">
-                        
-                        <!-- Left Date Block -->
-                        <div class="bg-gradient-to-br from-slate-900 to-blue-950 text-white sm:w-36 p-4 flex flex-col items-center justify-center text-center border-b sm:border-b-0 sm:border-r border-amber-400/30 relative">
-                            <div class="absolute top-2 left-2 text-amber-400/40 text-xs font-mono">#{{ index + 1 }}</div>
-                            <div class="text-4xl sm:text-5xl font-black tracking-tight text-white mb-0.5">{{ day.dateNum }}</div>
-                            <div class="text-sm sm:text-base font-bold text-amber-300 tracking-wide">{{ day.dayName }}</div>
-                            
-                            <!-- Admin edit day button -->
-                            <div v-if="adminMode" class="mt-3 flex items-center gap-1.5">
-                                <button @click="openEditDayModal(day)" class="bg-blue-600 hover:bg-blue-500 text-white px-2 py-1 rounded text-xs shadow flex items-center gap-1">
-                                    <i class="fa-solid fa-pen"></i> จัดเวร
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- Right Riders / Status Block -->
-                        <div class="flex-grow bg-gradient-to-r from-orange-500 via-orange-600 to-amber-600 p-4 flex items-center justify-between relative overflow-hidden">
-                            <div class="absolute right-0 bottom-0 opacity-10 text-7xl pointer-events-none transform translate-x-4 translate-y-4">
-                                🛵
-                            </div>
-
-                            <!-- If System Closed -->
-                            <div v-if="day.isClosed" class="w-full bg-red-600 text-white py-3 px-4 rounded-xl font-bold text-center flex items-center justify-center gap-3 shadow-inner border-2 border-red-400 animate-pulse">
-                                <i class="fa-solid fa-lock text-xl"></i>
-                                <div class="text-left">
-                                    <p class="text-lg font-black tracking-wide leading-tight">ปิดระบบ</p>
-                                    <p class="text-xs text-red-100 font-normal">({{ day.closeReason || 'ระบบปิดบริการ' }})</p>
-                                </div>
-                            </div>
-
-                            <!-- If Normal Working Shift -->
-                            <div v-else class="w-full flex flex-wrap items-center justify-around gap-3 py-1">
-                                <div v-for="riderName in day.riders" :key="riderName" 
-                                    class="flex flex-col items-center bg-white/95 backdrop-blur px-3.5 py-2 rounded-xl shadow-md border border-amber-200 transform hover:scale-105 transition-transform"
-                                    :class="{'ring-2 ring-amber-400 bg-amber-50': selectedRiderFilter === riderName}">
-                                    <div class="w-10 h-10 rounded-full flex items-center justify-center text-2xl mb-1 shadow-inner"
-                                        :style="{ backgroundColor: getRiderColor(riderName) + '20' }">
-                                        {{ getRiderAvatar(riderName) }}
-                                    </div>
-                                    <span class="font-bold text-xs sm:text-sm text-slate-900 whitespace-nowrap">{{ riderName }} <span class="text-xs">{{ getRiderHeart(riderName) }}</span></span>
-                                </div>
-
-                                <div v-if="day.riders.length === 0" class="w-full text-center py-2 text-white/90 font-medium text-sm">
-                                    <i class="fa-solid fa-triangle-exclamation mr-1"></i> ยังไม่มีไรเดอร์ลงเวรวันนี้
-                                </div>
-                            </div>
-                        </div>
-
-                    </div>
-                </div>
-
-                <!-- Empty filtered state -->
-                <div v-if="filteredDays.length === 0" class="text-center py-16 bg-white rounded-2xl shadow-md border border-amber-200 mt-6">
-                    <div class="text-5xl mb-3">🔍</div>
-                    <h3 class="text-xl font-bold text-slate-800">ไม่พบตารางงานสำหรับเงื่อนไขนี้</h3>
-                    <p class="text-slate-500 text-sm mt-1">ลองเปลี่ยนช่วงวันที่ หรือเลือกไรเดอร์ท่านอื่น</p>
-                </div>
-
-            </div>
-
-        </main>
-
-        <!-- Footer Action Buttons -->
-        <footer class="bg-slate-900 text-white py-8 border-t-4 border-amber-400 mt-12">
-            <div class="max-w-7xl mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-6 text-center md:text-left">
-                <div class="flex items-center gap-3">
-                    <div class="w-12 h-12 bg-amber-400 rounded-full flex items-center justify-center text-2xl shadow-lg">
+                <!-- สถานะการเชื่อมต่อฐานข้อมูล -->
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-full bg-orange-500 flex items-center justify-center text-white font-black text-sm shadow">
                         🐺
                     </div>
                     <div>
-                        <h2 class="font-extrabold text-lg tracking-wide text-amber-300">Wolf Delivery Cloud</h2>
-                        <p class="text-xs text-slate-400">ระบบจัดการตารางวิ่งงานไรเดอร์เชื่อมต่อ Supabase สำหรับ GitHub Pages</p>
+                        <div class="flex items-center gap-1.5">
+                            <span class="font-extrabold text-sm text-amber-300">Wolf Delivery</span>
+                            <span class="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full font-semibold"
+                                :class="dbStatus === 'connected' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-400/40' : 'bg-amber-500/20 text-amber-200 border border-amber-400/40'">
+                                <span class="w-1.5 h-1.5 rounded-full" :class="dbStatus === 'connected' ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'"></span>
+                                {{ dbStatus === 'connected' ? 'Cloud Sync' : 'Local Mode' }}
+                            </span>
+                        </div>
                     </div>
                 </div>
 
-                <div class="flex flex-wrap items-center justify-center gap-3">
-                    <button @click="exportAsImage" :disabled="isExporting" class="bg-emerald-500 hover:bg-emerald-400 text-slate-900 px-5 py-2.5 rounded-xl font-bold text-sm shadow-lg flex items-center gap-2 transition-all">
-                        <i :class="isExporting ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-image'"></i>
-                        <span>{{ isExporting ? 'กำลังสร้างรูปภาพ...' : 'ดาวน์โหลดรูปภาพ (PNG)' }}</span>
+                <!-- ตัวเลือกเดือน ปี และช่วงวันที่ -->
+                <div class="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                    <select v-model="currentMonth" @change="onMonthOrYearChange" class="bg-slate-800 text-amber-300 border border-slate-600 rounded-lg px-2.5 py-1.5 text-xs sm:text-sm font-bold outline-none focus:border-amber-400 cursor-pointer">
+                        <option v-for="(m, idx) in thaiMonths" :value="idx" :key="idx">{{ m }}</option>
+                    </select>
+
+                    <select v-model="currentYear" @change="onMonthOrYearChange" class="bg-slate-800 text-amber-300 border border-slate-600 rounded-lg px-2.5 py-1.5 text-xs sm:text-sm font-bold outline-none focus:border-amber-400 cursor-pointer">
+                        <option v-for="y in availableYears" :value="y" :key="y">พ.ศ. {{ y + 543 }}</option>
+                    </select>
+
+                    <select v-model="dateRangeMode" class="bg-slate-800 text-white border border-slate-600 rounded-lg px-2.5 py-1.5 text-xs sm:text-sm font-semibold outline-none focus:border-amber-400 cursor-pointer">
+                        <option value="all">ทั้งเดือน (1 - {{ daysInCurrentMonth }})</option>
+                        <option value="1-15">ครึ่งแรก (1 - 15)</option>
+                        <option value="16-end">ครึ่งหลัง (16 - {{ daysInCurrentMonth }})</option>
+                        <option value="custom">กำหนดช่วงวันเอง</option>
+                    </select>
+
+                    <!-- ช่องกำหนดช่วงวันเอง -->
+                    <div v-if="dateRangeMode === 'custom'" class="flex items-center gap-1 bg-slate-800 px-2 py-1 rounded-lg border border-amber-400/50 text-xs">
+                        <input type="number" v-model.number="customStartDay" min="1" :max="daysInCurrentMonth" class="w-11 bg-slate-900 text-amber-300 text-center font-bold rounded border border-slate-600 py-0.5">
+                        <span>-</span>
+                        <input type="number" v-model.number="customEndDay" min="1" :max="daysInCurrentMonth" class="w-11 bg-slate-900 text-amber-300 text-center font-bold rounded border border-slate-600 py-0.5">
+                    </div>
+                </div>
+
+                <!-- ปุ่ม Export PNG และ ปลดล็อกแอดมิน -->
+                <div class="flex items-center gap-2">
+                    <button @click="exportPosterPng" :disabled="isExporting" class="bg-emerald-500 hover:bg-emerald-400 text-slate-950 px-3 py-1.5 rounded-lg font-extrabold text-xs sm:text-sm shadow flex items-center gap-1.5 transition-all cursor-pointer">
+                        <i :class="isExporting ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-download'"></i>
+                        <span>{{ isExporting ? 'กำลังสร้างรูป...' : 'บันทึกรูป PNG' }}</span>
                     </button>
-                    <button @click="printSchedule" class="bg-amber-400 hover:bg-amber-300 text-slate-900 px-5 py-2.5 rounded-xl font-bold text-sm shadow-lg flex items-center gap-2">
-                        <i class="fa-solid fa-print"></i> พิมพ์เอกสาร
+
+                    <button v-if="!adminMode" @click="openAdminLogin" class="bg-amber-400 hover:bg-amber-300 text-slate-950 px-3 py-1.5 rounded-lg font-extrabold text-xs sm:text-sm shadow flex items-center gap-1.5 transition-all cursor-pointer">
+                        <i class="fa-solid fa-lock"></i>
+                        <span>ปลดล็อกแอดมิน</span>
+                    </button>
+
+                    <button v-else @click="lockAdminMode" class="bg-rose-600 hover:bg-rose-500 text-white px-3 py-1.5 rounded-lg font-extrabold text-xs sm:text-sm shadow flex items-center gap-1.5 transition-all cursor-pointer">
+                        <i class="fa-solid fa-lock-open"></i>
+                        <span>ล็อกแอดมิน</span>
                     </button>
                 </div>
             </div>
-        </footer>
 
-        <!-- Edit Day Modal -->
-        <div v-if="showDayModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm animate-fadeIn">
-            <div class="bg-white rounded-2xl shadow-2xl border-4 border-amber-400 w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
-                <div class="bg-slate-900 text-white px-6 py-4 flex items-center justify-between border-b border-amber-400">
-                    <h3 class="font-extrabold text-lg text-amber-300 flex items-center gap-2">
-                        <i class="fa-solid fa-calendar-day"></i> จัดเวรวันที่ {{ editingDay.dateNum }} {{ editingDay.dayName }} {{ thaiMonths[currentMonth] }}
-                    </h3>
-                    <button @click="showDayModal = false" class="text-slate-400 hover:text-white text-xl font-bold">&times;</button>
+            <!-- แถบเครื่องมือแอดมิน (แสดงเฉพาะเมื่อปลดล็อกแอดมินแล้ว) -->
+            <div v-if="adminMode" class="bg-slate-800 border-t border-slate-700 px-3 py-2">
+                <div class="max-w-5xl mx-auto flex flex-wrap items-center justify-between gap-2">
+                    <span class="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
+                        <i class="fa-solid fa-shield-halved"></i> โหมดแอดมินเปิดอยู่ (คลิกที่การ์ดวันที่เพื่อจัดเวรได้ทันที)
+                    </span>
+                    <div class="flex flex-wrap items-center gap-1.5">
+                        <button @click="openShiftTitleModal" class="bg-slate-700 hover:bg-slate-600 text-amber-300 px-2.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 cursor-pointer">
+                            <i class="fa-solid fa-heading"></i> แก้ชื่อกะ
+                        </button>
+                        <button @click="openRiderManager" class="bg-blue-600 hover:bg-blue-500 text-white px-2.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 cursor-pointer">
+                            <i class="fa-solid fa-helmet-safety"></i> จัดการไรเดอร์
+                        </button>
+                        <button @click="openHolidayManager" class="bg-purple-600 hover:bg-purple-500 text-white px-2.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 cursor-pointer">
+                            <i class="fa-solid fa-calendar-xmark"></i> วันหยุดประจำเดือน ({{ monthlyDefaultHolidays.join(', ') || 'ไม่มี' }})
+                        </button>
+                        <button @click="openEmergencyModal" class="bg-red-600 hover:bg-red-500 text-white px-2.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 cursor-pointer">
+                            <i class="fa-solid fa-triangle-exclamation"></i> ปิดระบบฉุกเฉิน
+                        </button>
+                        <button @click="openPinChangeModal" class="bg-slate-700 hover:bg-slate-600 text-white px-2.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 cursor-pointer">
+                            <i class="fa-solid fa-key"></i> เปลี่ยนรหัส
+                        </button>
+                        <button @click="showSupabaseModal = true" class="bg-teal-600 hover:bg-teal-500 text-white px-2.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 cursor-pointer">
+                            <i class="fa-solid fa-database"></i> ตั้งค่า Supabase / SQL
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- แถบตัวกรองดูเฉพาะเวรของไรเดอร์แต่ละคน (ซ่อนเวลา Export รูป) -->
+        <div class="max-w-4xl mx-auto w-full px-3 pt-4 no-print">
+            <div class="bg-white/90 backdrop-blur rounded-2xl px-4 py-2.5 shadow-sm border border-amber-300 flex flex-wrap items-center justify-between gap-2">
+                <div class="flex items-center gap-2 text-xs font-bold text-slate-700">
+                    <i class="fa-solid fa-filter text-orange-500"></i>
+                    <span>กรองดูเวรรายบุคคล:</span>
+                </div>
+                <div class="flex flex-wrap items-center gap-1.5">
+                    <button @click="selectedRiderFilter = null"
+                        class="px-2.5 py-1 rounded-full text-xs font-bold transition-all cursor-pointer"
+                        :class="selectedRiderFilter === null ? 'bg-slate-900 text-amber-300 shadow' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'">
+                        ทั้งหมด ({{ posterDays.length }} วัน)
+                    </button>
+                    <button v-for="rider in riders" :key="rider.id"
+                        @click="selectedRiderFilter = selectedRiderFilter === rider.name ? null : rider.name"
+                        class="px-2.5 py-1 rounded-full text-xs font-bold border transition-all flex items-center gap-1 cursor-pointer"
+                        :class="selectedRiderFilter === rider.name ? 'bg-orange-600 text-white border-orange-700 shadow scale-105' : 'bg-white text-slate-800 border-slate-200 hover:bg-amber-50'">
+                        <span>{{ rider.name }}</span>
+                        <span>{{ rider.heart }}</span>
+                        <span class="text-[10px] px-1.5 rounded-full" :class="selectedRiderFilter === rider.name ? 'bg-white/25 text-white' : 'bg-slate-100 text-slate-600'">
+                            {{ getRiderShiftCount(rider.name) }}
+                        </span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- พื้นที่โปสเตอร์หลัก (ส่วนนี้จะถูกจับภาพเมื่อกดดาวน์โหลด PNG) -->
+        <main class="max-w-4xl mx-auto w-full px-2 sm:px-4 py-4 sm:py-6 flex-grow">
+            <div id="poster-capture-area" class="poster-bg rounded-3xl overflow-hidden shadow-2xl border-4 border-amber-300 relative">
+                
+                <!-- ส่วนหัวโปสเตอร์ (Header Banner เหมือนภาพต้นฉบับ) -->
+                <div class="relative pt-5 pb-0 overflow-hidden bg-gradient-to-b from-amber-200/70 via-yellow-300/60 to-amber-400/50">
+                    
+                    <!-- ซิลลูเอตตึกเมืองจางๆ ด้านหลัง -->
+                    <div class="absolute inset-x-0 bottom-4 h-16 opacity-15 pointer-events-none flex items-end justify-between px-4">
+                        <div class="w-10 h-12 bg-amber-700 rounded-t"></div>
+                        <div class="w-14 h-16 bg-amber-700 rounded-t"></div>
+                        <div class="w-8 h-10 bg-amber-700 rounded-t"></div>
+                        <div class="w-16 h-14 bg-amber-700 rounded-t"></div>
+                        <div class="w-12 h-16 bg-amber-700 rounded-t"></div>
+                        <div class="w-10 h-11 bg-amber-700 rounded-t"></div>
+                        <div class="w-14 h-15 bg-amber-700 rounded-t"></div>
+                    </div>
+
+                    <!-- โลโก้ WolfDelivery ด้านบนสุด -->
+                    <div class="relative z-10 flex items-center justify-center gap-2 mb-1">
+                        <!-- SVG โลโก้หมาป่า WolfDelivery -->
+                        <svg class="w-9 h-9 drop-shadow" viewBox="0 0 64 64" fill="none">
+                            <path d="M14 10L24 22L12 28L14 10Z" fill="#334155" stroke="#0F172A" stroke-width="2.5" stroke-linejoin="round"/>
+                            <path d="M50 10L40 22L52 28L50 10Z" fill="#334155" stroke="#0F172A" stroke-width="2.5" stroke-linejoin="round"/>
+                            <path d="M16 15L22 22L15 25L16 15Z" fill="#F97316"/>
+                            <path d="M48 15L42 22L49 25L48 15Z" fill="#F97316"/>
+                            <ellipse cx="32" cy="36" rx="20" ry="18" fill="#334155" stroke="#0F172A" stroke-width="2.5"/>
+                            <path d="M15 36C15 28 22 30 32 34C42 30 49 28 49 36C49 46 41 53 32 53C23 53 15 46 15 36Z" fill="#F8FAFC"/>
+                            <circle cx="24" cy="33" r="3" fill="#0F172A"/>
+                            <circle cx="40" cy="33" r="3" fill="#0F172A"/>
+                            <circle cx="25" cy="32" r="1" fill="#FFFFFF"/>
+                            <circle cx="41" cy="32" r="1" fill="#FFFFFF"/>
+                            <ellipse cx="32" cy="41" rx="4" ry="2.8" fill="#0F172A"/>
+                            <path d="M27 46Q32 50 37 46" stroke="#0F172A" stroke-width="2.2" stroke-linecap="round"/>
+                        </svg>
+                        <div class="font-display font-black text-2xl sm:text-3xl tracking-tight drop-shadow-sm">
+                            <span class="text-[#0F2952]">Wolf</span><span class="text-[#F97316]">Delivery</span>
+                        </div>
+                    </div>
+
+                    <!-- แถวกลาง: ไรเดอร์ซ้าย + หัวข้อใหญ่ + มาสคอตหมาป่าขวา -->
+                    <div class="relative z-10 max-w-3xl mx-auto px-2 sm:px-4 flex items-center justify-between">
+                        
+                        <!-- การ์ตูนไรเดอร์ขี่มอเตอร์ไซค์ฝั่งซ้าย (ซ่อนบนจอมือถือเล็กมาก เพื่อไม่ให้เบียดหัวข้อ) -->
+                        <div class="hidden sm:block w-28 md:w-32 flex-shrink-0 -mb-2">
+                            <svg viewBox="0 0 140 120" class="w-full h-auto drop-shadow-md">
+                                <!-- เส้นความเร็ว -->
+                                <line x1="4" y1="45" x2="22" y2="45" stroke="#0F172A" stroke-width="2.5" stroke-linecap="round"/>
+                                <line x1="0" y1="56" x2="20" y2="56" stroke="#0F172A" stroke-width="2.5" stroke-linecap="round"/>
+                                <line x1="6" y1="67" x2="22" y2="67" stroke="#0F172A" stroke-width="2.5" stroke-linecap="round"/>
+                                <!-- กล่องส่งอาหารหลังรถ -->
+                                <rect x="24" y="38" width="28" height="26" rx="4" fill="#F97316" stroke="#0F172A" stroke-width="2.5"/>
+                                <line x1="24" y1="46" x2="52" y2="46" stroke="#0F172A" stroke-width="2"/>
+                                <circle cx="38" cy="54" r="5" fill="#334155"/>
+                                <!-- ตัวคนขับ -->
+                                <path d="M56 42C56 34 72 34 74 44L78 66H54L56 42Z" fill="#F97316" stroke="#0F172A" stroke-width="2.5"/>
+                                <path d="M56 66L76 66L84 86H72L66 72L56 72Z" fill="#1E293B" stroke="#0F172A" stroke-width="2.5"/>
+                                <!-- หัวและหมวกกันน็อก -->
+                                <circle cx="68" cy="24" r="13" fill="#F97316" stroke="#0F172A" stroke-width="2.5"/>
+                                <path d="M68 15C76 15 80 20 80 26C80 31 75 34 69 34C65 34 64 29 64 24C64 19 65 15 68 15Z" fill="#FDBA74" stroke="#0F172A" stroke-width="2"/>
+                                <path d="M64 13L84 18L78 21L64 18Z" fill="#EA580C" stroke="#0F172A" stroke-width="2"/>
+                                <!-- ตัวรถสกู๊ตเตอร์ -->
+                                <path d="M36 74H86L96 56H104L96 86H36V74Z" fill="#F97316" stroke="#0F172A" stroke-width="2.5" stroke-linejoin="round"/>
+                                <!-- ล้อหลังและล้อหน้า -->
+                                <circle cx="44" cy="92" r="14" fill="#334155" stroke="#0F172A" stroke-width="3"/>
+                                <circle cx="44" cy="92" r="6" fill="#CBD5E1" stroke="#0F172A" stroke-width="2"/>
+                                <circle cx="104" cy="92" r="14" fill="#334155" stroke="#0F172A" stroke-width="3"/>
+                                <circle cx="104" cy="92" r="6" fill="#CBD5E1" stroke="#0F172A" stroke-width="2"/>
+                            </svg>
+                        </div>
+
+                        <!-- ตรงกลาง: หัวข้อใหญ่ + แถบช่วงวันที่สีน้ำเงินเข้ม -->
+                        <div class="flex-grow text-center px-1 py-2">
+                            <h1 class="title-sticker text-3xl sm:text-4xl md:text-5xl font-black tracking-tight leading-tight">
+                                {{ shiftTitle }}
+                            </h1>
+                            
+                            <div class="mt-2.5 inline-flex items-center justify-center gap-2 bg-[#0F2952] text-white px-5 sm:px-7 py-1.5 sm:py-2 rounded-full shadow-lg border-2 border-white/80">
+                                <span class="font-display font-extrabold text-base sm:text-xl tracking-wide">
+                                    {{ posterDateRangeLabel }}
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- การ์ตูนมาสคอตหมาป่าใส่หมวกกันน็อกขี่รถฝั่งขวา -->
+                        <div class="hidden sm:block w-28 md:w-32 flex-shrink-0 -mb-2">
+                            <svg viewBox="0 0 140 120" class="w-full h-auto drop-shadow-md">
+                                <!-- เส้นความเร็วขวา -->
+                                <line x1="118" y1="50" x2="136" y2="50" stroke="#0F172A" stroke-width="2.5" stroke-linecap="round"/>
+                                <line x1="120" y1="60" x2="140" y2="60" stroke="#0F172A" stroke-width="2.5" stroke-linecap="round"/>
+                                <!-- กล่องส่งอาหารหลังรถ -->
+                                <rect x="92" y="42" width="26" height="24" rx="4" fill="#F97316" stroke="#0F172A" stroke-width="2.5"/>
+                                <circle cx="105" cy="54" r="5" fill="#334155"/>
+                                <!-- ตัวมาสคอต -->
+                                <path d="M62 48C62 40 80 40 82 50L84 72H60L62 48Z" fill="#F97316" stroke="#0F172A" stroke-width="2.5"/>
+                                <!-- หัวหมาป่า + หมวกกันน็อกสีส้มมีหู -->
+                                <circle cx="72" cy="26" r="18" fill="#F97316" stroke="#0F172A" stroke-width="2.5"/>
+                                <path d="M56 14L62 4L68 13Z" fill="#334155" stroke="#0F172A" stroke-width="2"/>
+                                <path d="M88 14L82 4L76 13Z" fill="#334155" stroke="#0F172A" stroke-width="2"/>
+                                <ellipse cx="72" cy="28" rx="13" ry="12" fill="#334155" stroke="#0F172A" stroke-width="2"/>
+                                <path d="M60 28C60 24 66 25 72 27C78 25 84 24 84 28C84 35 78 39 72 39C66 39 60 35 60 28Z" fill="#F8FAFC"/>
+                                <circle cx="67" cy="26" r="2.2" fill="#0F172A"/>
+                                <circle cx="77" cy="26" r="2.2" fill="#0F172A"/>
+                                <ellipse cx="72" cy="31" rx="2.8" ry="2" fill="#0F172A"/>
+                                <!-- ตัวรถสกู๊ตเตอร์ -->
+                                <path d="M44 58H54L62 74H98V86H44L38 68L44 58Z" fill="#F97316" stroke="#0F172A" stroke-width="2.5" stroke-linejoin="round"/>
+                                <!-- ล้อหน้าและล้อหลัง -->
+                                <circle cx="42" cy="92" r="14" fill="#334155" stroke="#0F172A" stroke-width="3"/>
+                                <circle cx="42" cy="92" r="6" fill="#CBD5E1" stroke="#0F172A" stroke-width="2"/>
+                                <circle cx="94" cy="92" r="14" fill="#334155" stroke="#0F172A" stroke-width="3"/>
+                                <circle cx="94" cy="92" r="6" fill="#CBD5E1" stroke="#0F172A" stroke-width="2"/>
+                            </svg>
+                        </div>
+
+                    </div>
+
+                    <!-- ถนนลาดยางสีเทาเข้มพร้อมเส้นประสีขาวด้านล่างส่วนหัว -->
+                    <div class="w-full h-5 bg-[#334155] border-t-2 border-b-2 border-slate-900 flex items-center overflow-hidden mt-1">
+                        <div class="w-full border-t-2 border-dashed border-white/90"></div>
+                    </div>
                 </div>
 
-                <div class="p-6 overflow-y-auto space-y-5 flex-grow">
-                    <div class="bg-amber-50 p-4 rounded-xl border border-amber-200 flex items-center justify-between">
+                <!-- แถบรายชื่อไรเดอร์ทั้งหมดพร้อมไอคอนกุญแจและอวตารสวมหมวกกันน็อก -->
+                <div class="px-3 sm:px-6 pt-3 pb-1">
+                    <div class="bg-white/95 rounded-2xl px-3 py-2 shadow-md border-2 border-amber-300 flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
+                        <div class="flex items-center gap-1 font-extrabold text-slate-800 text-base">
+                            <span class="text-xl">🔑</span>
+                            <span>:</span>
+                        </div>
+                        
+                        <div v-for="rider in riders" :key="rider.id"
+                            @click="selectedRiderFilter = selectedRiderFilter === rider.name ? null : rider.name"
+                            class="flex items-center gap-1.5 cursor-pointer px-1.5 py-0.5 rounded-xl transition-transform hover:scale-105"
+                            :class="{'bg-amber-100 ring-2 ring-orange-500': selectedRiderFilter === rider.name}">
+                            <!-- อวตารไรเดอร์ SVG สวมหมวกกันน็อกสีประจำตัว -->
+                            <div class="w-8 h-8 rounded-full bg-white border-2 border-slate-900 overflow-hidden flex-shrink-0 shadow-sm">
+                                <svg viewBox="0 0 64 64" class="w-full h-full">
+                                    <!-- ไหล่เสื้อสีประจำตัว -->
+                                    <path d="M12 64C12 52 20 48 32 48C44 48 52 52 52 64H12Z" :fill="rider.helmetColor" stroke="#0F172A" stroke-width="3"/>
+                                    <path d="M26 48L32 56L38 48" fill="#FFFFFF" stroke="#0F172A" stroke-width="2"/>
+                                    <!-- ผมด้านหลัง (กรณีผมยาว) -->
+                                    <path v-if="rider.hairStyle === 'long'" d="M14 28C12 40 14 48 18 50H46C50 48 52 40 50 28Z" fill="#1E293B" stroke="#0F172A" stroke-width="2.5"/>
+                                    <!-- หมวกกันน็อก -->
+                                    <path d="M14 30C14 16 22 8 32 8C42 8 50 16 50 30C50 38 46 44 40 46H24C18 44 14 38 14 30Z" :fill="rider.helmetColor" stroke="#0F172A" stroke-width="3"/>
+                                    <!-- ขอบกระบังหมวก -->
+                                    <path d="M17 24Q32 19 47 24" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" opacity="0.85"/>
+                                    <!-- ใบหน้า -->
+                                    <path d="M20 27C20 23 25 22 32 22C39 22 44 23 44 27C44 37 39 44 32 44C25 44 20 37 20 27Z" fill="#FDE6D8" stroke="#0F172A" stroke-width="2.5"/>
+                                    <!-- ผมหน้าม้า -->
+                                    <path d="M20 27C22 22 28 22 32 25C36 22 42 22 44 27C42 21 37 20 32 20C27 20 22 21 20 27Z" fill="#1E293B"/>
+                                    <!-- ดวงตา -->
+                                    <circle cx="27" cy="31" r="2" fill="#0F172A"/>
+                                    <circle cx="37" cy="31" r="2" fill="#0F172A"/>
+                                    <!-- แว่นตา (ถ้ามี เช่น กาย) -->
+                                    <g v-if="rider.hasGlasses">
+                                        <rect x="22" y="27.5" width="9" height="7" rx="1.5" fill="none" stroke="#0F172A" stroke-width="1.8"/>
+                                        <rect x="33" y="27.5" width="9" height="7" rx="1.5" fill="none" stroke="#0F172A" stroke-width="1.8"/>
+                                        <line x1="31" y1="30.5" x2="33" y2="30.5" stroke="#0F172A" stroke-width="1.8"/>
+                                    </g>
+                                    <!-- รอยยิ้ม -->
+                                    <path d="M29 37Q32 40 35 37" stroke="#0F172A" stroke-width="2" stroke-linecap="round" fill="none"/>
+                                </svg>
+                            </div>
+                            <span class="font-extrabold text-slate-900 text-sm sm:text-base">{{ rider.name }}</span>
+                            <span class="text-sm leading-none">{{ rider.heart }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ตารางวันที่ 2 คอลัมน์ (เหมือนภาพต้นฉบับเป๊ะ) -->
+                <div class="p-3 sm:p-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3.5 sm:gap-4">
+                        <div v-for="day in filteredPosterDays" :key="day.dateStr"
+                            @click="adminMode ? openEditDayModal(day) : null"
+                            class="rounded-2xl overflow-hidden poster-card-shadow flex items-stretch min-h-[104px] transition-all duration-200 relative group"
+                            :class="[
+                                adminMode ? 'cursor-pointer hover:ring-4 hover:ring-blue-500 hover:scale-[1.01]' : '',
+                                selectedRiderFilter && isRiderWorkingOnDay(day, selectedRiderFilter) ? 'ring-4 ring-emerald-500' : ''
+                            ]">
+                            
+                            <!-- กล่องซ้าย: เลขวันที่และชื่อวัน (วันเสาร์-อาทิตย์พื้นหลังสีส้ม วันจันทร์-ศุกร์พื้นหลังสีน้ำเงินเข้ม เหมือนภาพต้นฉบับ) -->
+                            <div class="w-28 sm:w-32 flex-shrink-0 flex flex-col items-center justify-center p-2.5 text-white select-none"
+                                :class="day.isWeekend ? 'bg-[#EA580C]' : 'bg-[#0F2952]'">
+                                <span class="font-display font-black text-4xl sm:text-[42px] leading-none tracking-tight">
+                                    {{ day.dateNum }}
+                                </span>
+                                <span class="font-bold text-sm sm:text-base mt-1 tracking-wide">
+                                    {{ day.dayName }}
+                                </span>
+                            </div>
+
+                            <!-- กล่องขวา: สถานะปิดระบบ หรือ รายชื่อ+รูปไรเดอร์ที่วิ่งงาน -->
+                            <div class="flex-grow flex items-center justify-center px-3 py-2.5 relative"
+                                :class="day.isClosed ? 'bg-[#DC2626]' : (day.isWeekend ? 'bg-[#0F2952]' : 'bg-[#EA580C]')">
+                                
+                                <!-- ปุ่มแก้ไขเล็กๆ มุมขวาบนเมื่อเปิดโหมดแอดมิน (ซ่อนอัตโนมัติในไฟล์รูป PNG) -->
+                                <button v-if="adminMode" data-html2canvas-ignore="true"
+                                    @click.stop="openEditDayModal(day)"
+                                    class="absolute top-1.5 right-1.5 bg-white/95 hover:bg-white text-slate-900 px-2 py-0.5 rounded-md text-[11px] font-extrabold shadow flex items-center gap-1 z-10">
+                                    <i class="fa-solid fa-pen text-blue-600"></i> แก้ไข
+                                </button>
+
+                                <!-- กรณีวันหยุด / ปิดระบบ -->
+                                <div v-if="day.isClosed" class="flex items-center justify-center gap-3 text-white text-center py-1">
+                                    <!-- ไอคอนบ้าน/ร้านปิดล็อกสีแดงขอบขาวเหมือนภาพต้นฉบับ -->
+                                    <div class="w-12 h-12 flex-shrink-0 flex items-center justify-center">
+                                        <svg viewBox="0 0 64 64" class="w-11 h-11 drop-shadow">
+                                            <path d="M8 28L32 10L56 28" fill="none" stroke="#FFFFFF" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+                                            <path d="M16 26V52H48V26" fill="#EF4444" stroke="#FFFFFF" stroke-width="4" stroke-linejoin="round"/>
+                                            <rect x="27" y="34" width="10" height="12" rx="2" fill="#FFFFFF"/>
+                                            <circle cx="32" cy="39" r="1.5" fill="#DC2626"/>
+                                            <line x1="32" y1="40.5" x2="32" y2="43" stroke="#DC2626" stroke-width="1.5"/>
+                                        </svg>
+                                    </div>
+                                    <div class="text-left">
+                                        <div class="font-display font-black text-2xl sm:text-3xl leading-none text-outline-dark tracking-wide">
+                                            ปิดระบบ
+                                        </div>
+                                        <div class="text-xs sm:text-sm font-bold text-white/95 mt-1">
+                                            ({{ day.closeReason || 'ระบบปิดบริการ' }})
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- กรณีวันทำงานปกติ: แสดงชื่อไรเดอร์+หัวใจด้านบน และรูปวงกลมด้านล่าง -->
+                                <div v-else class="w-full flex items-center justify-around gap-1.5 sm:gap-2">
+                                    <div v-for="riderName in day.riders" :key="riderName"
+                                        class="flex flex-col items-center justify-center transition-transform"
+                                        :class="{'scale-105': selectedRiderFilter === riderName}">
+                                        
+                                        <!-- ชื่อไรเดอร์ + หัวใจสีประจำตัว -->
+                                        <div class="flex items-center gap-0.5 mb-1">
+                                            <span class="font-extrabold text-white text-xs sm:text-sm text-outline-dark whitespace-nowrap">
+                                                {{ riderName }}
+                                            </span>
+                                            <span class="text-xs sm:text-sm leading-none drop-shadow">
+                                                {{ getRiderInfo(riderName).heart }}
+                                            </span>
+                                        </div>
+
+                                        <!-- วงกลมอวตารไรเดอร์สวมหมวกกันน็อก -->
+                                        <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-white border-2 border-slate-900 overflow-hidden shadow-md flex items-center justify-center"
+                                            :class="{'ring-4 ring-amber-300': selectedRiderFilter === riderName}">
+                                            <svg viewBox="0 0 64 64" class="w-full h-full">
+                                                <path d="M12 64C12 52 20 48 32 48C44 48 52 52 52 64H12Z" :fill="getRiderInfo(riderName).helmetColor" stroke="#0F172A" stroke-width="3"/>
+                                                <path d="M26 48L32 56L38 48" fill="#FFFFFF" stroke="#0F172A" stroke-width="2"/>
+                                                <path v-if="getRiderInfo(riderName).hairStyle === 'long'" d="M14 28C12 40 14 48 18 50H46C50 48 52 40 50 28Z" fill="#1E293B" stroke="#0F172A" stroke-width="2.5"/>
+                                                <path d="M14 30C14 16 22 8 32 8C42 8 50 16 50 30C50 38 46 44 40 46H24C18 44 14 38 14 30Z" :fill="getRiderInfo(riderName).helmetColor" stroke="#0F172A" stroke-width="3"/>
+                                                <path d="M17 24Q32 19 47 24" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" opacity="0.85"/>
+                                                <path d="M20 27C20 23 25 22 32 22C39 22 44 23 44 27C44 37 39 44 32 44C25 44 20 37 20 27Z" fill="#FDE6D8" stroke="#0F172A" stroke-width="2.5"/>
+                                                <path d="M20 27C22 22 28 22 32 25C36 22 42 22 44 27C42 21 37 20 32 20C27 20 22 21 20 27Z" fill="#1E293B"/>
+                                                <circle cx="27" cy="31" r="2" fill="#0F172A"/>
+                                                <circle cx="37" cy="31" r="2" fill="#0F172A"/>
+                                                <g v-if="getRiderInfo(riderName).hasGlasses">
+                                                    <rect x="22" y="27.5" width="9" height="7" rx="1.5" fill="none" stroke="#0F172A" stroke-width="1.8"/>
+                                                    <rect x="33" y="27.5" width="9" height="7" rx="1.5" fill="none" stroke="#0F172A" stroke-width="1.8"/>
+                                                    <line x1="31" y1="30.5" x2="33" y2="30.5" stroke="#0F172A" stroke-width="1.8"/>
+                                                </g>
+                                                <path d="M29 37Q32 40 35 37" stroke="#0F172A" stroke-width="2" stroke-linecap="round" fill="none"/>
+                                            </svg>
+                                        </div>
+                                    </div>
+
+                                    <!-- กรณียังไม่ได้เลือกไรเดอร์ลงเวร -->
+                                    <div v-if="day.riders.length === 0" class="text-white/90 text-xs sm:text-sm font-bold text-center py-2">
+                                        ยังไม่มีไรเดอร์ลงเวร
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- กรณีกรองแล้วไม่พบข้อมูล -->
+                    <div v-if="filteredPosterDays.length === 0" class="bg-white/90 rounded-2xl p-8 text-center shadow border-2 border-amber-300 mt-4">
+                        <p class="text-lg font-extrabold text-slate-800">ไม่พบตารางวิ่งงานในช่วงที่เลือก</p>
+                        <button @click="selectedRiderFilter = null; dateRangeMode = 'all'" class="mt-3 bg-orange-600 text-white px-4 py-1.5 rounded-xl text-xs font-bold shadow cursor-pointer">
+                            แสดงตารางทั้งหมด
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+
+        <!-- ==================== MODALS (ทุกหน้าต่างใช้พื้นหลังขาว ตัวอักษรสีเข้มคมชัด 100%) ==================== -->
+
+        <!-- 1. Modal ปลดล็อกแอดมิน (แก้บั๊กสีตัวอักษรขาวกลืนพื้นหลังแล้ว) -->
+        <div v-if="showAdminLoginModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-sm">
+            <div class="bg-white text-slate-900 rounded-3xl shadow-2xl border-4 border-amber-400 w-full max-w-sm p-6 text-center animate-slideUp">
+                <div class="w-16 h-16 bg-amber-400 text-slate-950 rounded-full flex items-center justify-center text-3xl mx-auto mb-3 shadow-md">
+                    <i class="fa-solid fa-lock"></i>
+                </div>
+                <h3 class="text-xl font-black text-slate-900">ปลดล็อกโหมดแอดมิน</h3>
+                <p class="text-xs text-slate-600 mt-1 mb-4">
+                    กรอกรหัสผ่านเพื่อแก้ไขตารางเวรและตั้งค่าระบบ<br>
+                    <span class="text-slate-500">(รหัสผ่านเริ่มต้นคือ <strong class="text-orange-600 font-mono">1234</strong>)</span>
+                </p>
+
+                <input type="password" v-model="adminPinInput" @keyup.enter="submitAdminLogin"
+                    placeholder="กรอกรหัสผ่านแอดมิน"
+                    class="w-full bg-slate-100 text-slate-900 placeholder-slate-400 border-2 border-slate-300 focus:border-orange-500 focus:bg-white rounded-xl px-4 py-2.5 text-center text-lg font-extrabold tracking-widest outline-none mb-2">
+                
+                <p v-if="adminLoginError" class="text-xs font-bold text-red-600 mb-3">{{ adminLoginError }}</p>
+
+                <div class="flex gap-2 mt-4">
+                    <button @click="showAdminLoginModal = false" class="flex-1 bg-slate-200 hover:bg-slate-300 text-slate-800 py-2.5 rounded-xl font-bold text-sm cursor-pointer">
+                        ยกเลิก
+                    </button>
+                    <button @click="submitAdminLogin" class="flex-1 bg-orange-600 hover:bg-orange-500 text-white py-2.5 rounded-xl font-bold text-sm shadow cursor-pointer">
+                        เข้าสู่ระบบ
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. Modal แก้ไขเวรรายวัน -->
+        <div v-if="showDayModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-sm">
+            <div class="bg-white text-slate-900 rounded-3xl shadow-2xl border-4 border-amber-400 w-full max-w-md overflow-hidden flex flex-col max-h-[90vh] animate-slideUp">
+                <div class="bg-[#0F2952] text-white px-5 py-4 flex items-center justify-between">
+                    <h3 class="font-extrabold text-base sm:text-lg text-amber-300">
+                        จัดเวรวันที่ {{ editingDay.dateNum }} {{ editingDay.dayName }} {{ thaiMonths[currentMonth] }}
+                    </h3>
+                    <button @click="showDayModal = false" class="text-slate-300 hover:text-white text-2xl leading-none cursor-pointer">&times;</button>
+                </div>
+
+                <div class="p-5 overflow-y-auto space-y-4">
+                    <!-- สวิตช์ปิดระบบ / วันหยุด -->
+                    <div class="bg-red-50 border-2 border-red-200 rounded-2xl p-3.5 flex items-center justify-between">
                         <div>
-                            <span class="font-bold text-slate-800 text-sm">สถานะ: ปิดระบบ (วันหยุด)</span>
-                            <p class="text-xs text-slate-500">หากเปิดใช้งาน วันนี้จะแสดงแถบปิดบริการสีแดง</p>
+                            <p class="font-extrabold text-red-800 text-sm">ปิดระบบ / วันหยุด</p>
+                            <p class="text-xs text-red-600">แสดงกล่องสีแดง "ปิดระบบ" แทนรายชื่อไรเดอร์</p>
                         </div>
                         <label class="relative inline-flex items-center cursor-pointer">
                             <input type="checkbox" v-model="editingDay.isClosed" class="sr-only peer">
-                            <div class="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-600"></div>
+                            <div class="w-12 h-6 bg-slate-300 rounded-full peer peer-checked:bg-red-600 after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-6"></div>
                         </label>
                     </div>
 
-                    <div v-if="!editingDay.isClosed">
-                        <label class="block text-xs font-bold text-slate-700 uppercase mb-2">เลือกไรเดอร์ที่ลงเวรวันนี้:</label>
-                        <div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-                            <label v-for="rider in riders" :key="rider.id" 
-                                class="flex items-center gap-2.5 p-3 rounded-xl border cursor-pointer transition-all select-none"
-                                :class="editingDay.riders.includes(rider.name) ? 'bg-orange-50 border-orange-500 ring-2 ring-orange-200' : 'bg-white hover:bg-slate-50 border-slate-200'">
-                                <input type="checkbox" :value="rider.name" v-model="editingDay.riders" class="w-4 h-4 text-orange-600 rounded focus:ring-orange-500">
-                                <span class="text-xl">{{ rider.avatar }}</span>
-                                <span class="font-bold text-sm text-slate-800">{{ rider.name }}</span>
+                    <!-- ช่องกรอกเหตุผลการปิดระบบ -->
+                    <div v-if="editingDay.isClosed">
+                        <label class="block text-xs font-extrabold text-slate-700 mb-1">ข้อความอธิบายการปิดระบบ:</label>
+                        <input type="text" v-model="editingDay.closeReason" placeholder="เช่น ระบบปิดบริการ, วันหยุดประจำเดือน"
+                            class="w-full bg-slate-100 text-slate-900 border-2 border-slate-300 rounded-xl px-3 py-2 text-sm font-bold outline-none focus:border-red-500">
+                    </div>
+
+                    <!-- เลือกไรเดอร์ที่ลงเวร -->
+                    <div v-else>
+                        <div class="flex items-center justify-between mb-2">
+                            <label class="text-xs font-extrabold text-slate-700">เลือกไรเดอร์ที่วิ่งงาน (เลือกได้สูงสุด 4 คน):</label>
+                            <button @click="editingDay.riders = []" class="text-xs font-bold text-rose-600 hover:underline cursor-pointer">ล้างทั้งหมด</button>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <label v-for="rider in riders" :key="rider.id"
+                                class="flex items-center gap-2.5 p-2.5 rounded-xl border-2 cursor-pointer transition-all select-none"
+                                :class="editingDay.riders.includes(rider.name) ? 'bg-orange-50 border-orange-500 text-slate-900 shadow-sm' : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'">
+                                <input type="checkbox" :value="rider.name" v-model="editingDay.riders"
+                                    :disabled="!editingDay.riders.includes(rider.name) && editingDay.riders.length >= 4"
+                                    class="w-4 h-4 accent-orange-600 rounded">
+                                <span class="font-extrabold text-sm">{{ rider.name }}</span>
+                                <span>{{ rider.heart }}</span>
                             </label>
                         </div>
                     </div>
                 </div>
 
-                <div class="bg-slate-100 px-6 py-4 flex items-center justify-end gap-3 border-t">
-                    <button @click="showDayModal = false" class="px-4 py-2 rounded-xl text-slate-600 hover:bg-slate-200 font-bold text-sm">ยกเลิก</button>
-                    <button @click="saveEditingDay" class="bg-orange-600 hover:bg-orange-700 text-white px-5 py-2 rounded-xl font-bold text-sm shadow">บันทึกเวร</button>
+                <div class="bg-slate-100 px-5 py-3.5 flex items-center justify-end gap-2 border-t border-slate-200">
+                    <button @click="showDayModal = false" class="px-4 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold text-sm cursor-pointer">ยกเลิก</button>
+                    <button @click="saveEditingDay" class="px-5 py-2 rounded-xl bg-orange-600 hover:bg-orange-500 text-white font-bold text-sm shadow cursor-pointer">บันทึกเวร</button>
                 </div>
             </div>
         </div>
 
-        <!-- Rider Manager Modal -->
-        <div v-if="showRiderModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm animate-fadeIn">
-            <div class="bg-white rounded-2xl shadow-2xl border-4 border-amber-400 w-full max-w-xl overflow-hidden flex flex-col max-h-[90vh]">
-                <div class="bg-slate-900 text-white px-6 py-4 flex items-center justify-between border-b border-amber-400">
-                    <h3 class="font-extrabold text-lg text-amber-300 flex items-center gap-2">
-                        <i class="fa-solid fa-users-gear"></i> จัดการรายชื่อไรเดอร์
+        <!-- 3. Modal จัดการรายชื่อไรเดอร์ -->
+        <div v-if="showRiderModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-sm">
+            <div class="bg-white text-slate-900 rounded-3xl shadow-2xl border-4 border-amber-400 w-full max-w-xl overflow-hidden flex flex-col max-h-[90vh] animate-slideUp">
+                <div class="bg-[#0F2952] text-white px-5 py-4 flex items-center justify-between">
+                    <h3 class="font-extrabold text-base sm:text-lg text-amber-300 flex items-center gap-2">
+                        <i class="fa-solid fa-helmet-safety"></i> จัดการรายชื่อและสีหมวกไรเดอร์
                     </h3>
-                    <button @click="showRiderModal = false" class="text-slate-400 hover:text-white text-xl font-bold">&times;</button>
+                    <button @click="showRiderModal = false" class="text-slate-300 hover:text-white text-2xl leading-none cursor-pointer">&times;</button>
                 </div>
 
-                <div class="p-6 overflow-y-auto space-y-4 flex-grow">
-                    <div class="flex justify-between items-center">
-                        <p class="text-xs text-slate-600 font-bold uppercase">รายชื่อไรเดอร์ทั้งหมดในระบบ</p>
-                        <button @click="addNewRider" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow flex items-center gap-1">
-                            <i class="fa-solid fa-plus"></i> เพิ่มไรเดอร์ใหม่
+                <div class="p-5 overflow-y-auto space-y-3">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold text-slate-600">ปรับแต่งชื่อ สีหมวกกันน็อก และสีหัวใจประจำตัว</span>
+                        <button @click="addNewRider" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded-xl text-xs font-bold shadow flex items-center gap-1 cursor-pointer">
+                            <i class="fa-solid fa-plus"></i> เพิ่มไรเดอร์
                         </button>
                     </div>
 
-                    <div class="space-y-3">
-                        <div v-for="(rider, idx) in riders" :key="rider.id" class="bg-slate-50 p-3 rounded-xl border flex items-center gap-3">
-                            <input type="text" v-model="rider.avatar" class="w-16 text-center text-xl bg-white border rounded-lg py-1" placeholder="อีโมจิ">
-                            <input type="text" v-model="rider.name" class="flex-grow font-bold px-3 py-1 bg-white border rounded-lg text-sm" placeholder="ชื่อไรเดอร์">
-                            <select v-model="rider.heart" class="bg-white border rounded-lg px-2 py-1 text-sm">
-                                <option value="💖">💖</option>
-                                <option value="🧡">🧡</option>
-                                <option value="💛">💛</option>
-                                <option value="💚">💚</option>
-                                <option value="💙">💙</option>
-                                <option value="💜">💜</option>
-                                <option value="❤️">❤️</option>
+                    <div v-for="(rider, idx) in riders" :key="rider.id" class="bg-slate-50 border-2 border-slate-200 rounded-2xl p-3 flex flex-wrap items-center gap-2.5">
+                        <!-- ตัวอย่างสีหมวก -->
+                        <div class="w-8 h-8 rounded-full border-2 border-slate-900 flex-shrink-0" :style="{ backgroundColor: rider.helmetColor }"></div>
+                        
+                        <input type="text" v-model="rider.name" placeholder="ชื่อไรเดอร์"
+                            class="flex-grow min-w-[100px] bg-white text-slate-900 border border-slate-300 rounded-lg px-2.5 py-1.5 text-sm font-bold outline-none focus:border-blue-500">
+                        
+                        <select v-model="rider.helmetColor" class="bg-white text-slate-900 border border-slate-300 rounded-lg px-2 py-1.5 text-xs font-bold">
+                            <option value="#EC4899">หมวกชมพู</option>
+                            <option value="#F97316">หมวกส้ม</option>
+                            <option value="#2563EB">หมวกน้ำเงิน</option>
+                            <option value="#16A34A">หมวกเขียว</option>
+                            <option value="#EAB308">หมวกเหลือง</option>
+                            <option value="#9333EA">หมวกม่วง</option>
+                            <option value="#EF4444">หมวกแดง</option>
+                            <option value="#0D9488">หมวกเขียวมิ้นต์</option>
+                        </select>
+
+                        <select v-model="rider.heart" class="bg-white text-slate-900 border border-slate-300 rounded-lg px-2 py-1.5 text-sm">
+                            <option value="🩷">🩷</option>
+                            <option value="🧡">🧡</option>
+                            <option value="💙">💙</option>
+                            <option value="💚">💚</option>
+                            <option value="💛">💛</option>
+                            <option value="💜">💜</option>
+                            <option value="❤️">❤️</option>
+                        </select>
+
+                        <label class="flex items-center gap-1 text-xs font-bold text-slate-700 cursor-pointer">
+                            <input type="checkbox" v-model="rider.hasGlasses" class="accent-blue-600"> แว่น
+                        </label>
+
+                        <button @click="removeRider(idx)" class="text-red-600 hover:bg-red-100 p-1.5 rounded-lg transition-colors cursor-pointer" title="ลบไรเดอร์">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="bg-slate-100 px-5 py-3.5 flex items-center justify-end gap-2 border-t border-slate-200">
+                    <button @click="showRiderModal = false" class="px-4 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold text-sm cursor-pointer">ปิด</button>
+                    <button @click="saveRidersList" class="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-sm shadow cursor-pointer">บันทึกรายชื่อ</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. Modal ตั้งค่าวันหยุดประจำเดือน (ค่าเริ่มต้น 10 และ 20) -->
+        <div v-if="showHolidayModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-sm">
+            <div class="bg-white text-slate-900 rounded-3xl shadow-2xl border-4 border-purple-500 w-full max-w-md overflow-hidden animate-slideUp">
+                <div class="bg-purple-900 text-white px-5 py-4 flex items-center justify-between">
+                    <h3 class="font-extrabold text-base sm:text-lg text-amber-300 flex items-center gap-2">
+                        <i class="fa-solid fa-calendar-xmark"></i> วันหยุดประจำทุกเดือน
+                    </h3>
+                    <button @click="showHolidayModal = false" class="text-slate-300 hover:text-white text-2xl leading-none cursor-pointer">&times;</button>
+                </div>
+
+                <div class="p-5 space-y-4">
+                    <p class="text-xs text-slate-600">
+                        กำหนดวันที่ต้องการให้หยุดวิ่งงานอัตโนมัติในทุกๆ เดือน (ค่าเริ่มต้นคือวันที่ <strong>10</strong> และ <strong>20</strong>)
+                    </p>
+
+                    <div class="flex gap-2">
+                        <input type="number" v-model.number="newHolidayDay" min="1" max="31" placeholder="ระบุวันที่ (1-31)"
+                            @keyup.enter="addMonthlyHoliday"
+                            class="flex-grow bg-slate-100 text-slate-900 border-2 border-slate-300 rounded-xl px-3 py-2 text-sm font-bold outline-none focus:border-purple-600">
+                        <button @click="addMonthlyHoliday" class="bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded-xl text-sm font-bold shadow cursor-pointer">
+                            เพิ่มวันที่
+                        </button>
+                    </div>
+
+                    <div class="flex flex-wrap gap-2">
+                        <span v-for="(d, idx) in monthlyDefaultHolidays" :key="d"
+                            class="inline-flex items-center gap-2 bg-purple-100 text-purple-900 border border-purple-300 px-3 py-1.5 rounded-full text-sm font-extrabold">
+                            วันที่ {{ d }}
+                            <button @click="removeMonthlyHoliday(idx)" class="text-purple-700 hover:text-red-600 font-black cursor-pointer">&times;</button>
+                        </span>
+                        <span v-if="monthlyDefaultHolidays.length === 0" class="text-xs text-slate-400">ยังไม่ได้กำหนดวันหยุดประจำเดือน</span>
+                    </div>
+                </div>
+
+                <div class="bg-slate-100 px-5 py-3.5 flex items-center justify-end gap-2 border-t border-slate-200">
+                    <button @click="showHolidayModal = false" class="px-4 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold text-sm cursor-pointer">ยกเลิก</button>
+                    <button @click="saveMonthlyHolidaysConfig" class="px-5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-sm shadow cursor-pointer">บันทึกและอัปเดตเดือนนี้</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 5. Modal ปิดระบบฉุกเฉิน (เลือกวันเดียวหรือช่วงวันได้) -->
+        <div v-if="showEmergencyModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-sm">
+            <div class="bg-white text-slate-900 rounded-3xl shadow-2xl border-4 border-red-500 w-full max-w-md overflow-hidden animate-slideUp">
+                <div class="bg-red-700 text-white px-5 py-4 flex items-center justify-between">
+                    <h3 class="font-extrabold text-base sm:text-lg text-white flex items-center gap-2">
+                        <i class="fa-solid fa-triangle-exclamation text-amber-300"></i> จัดการปิดระบบฉุกเฉิน
+                    </h3>
+                    <button @click="showEmergencyModal = false" class="text-red-200 hover:text-white text-2xl leading-none cursor-pointer">&times;</button>
+                </div>
+
+                <div class="p-5 space-y-4">
+                    <div class="grid grid-cols-2 gap-2.5">
+                        <div>
+                            <label class="block text-xs font-extrabold text-slate-700 mb-1">ตั้งแต่วันที่:</label>
+                            <select v-model.number="emergencyStartDay" class="w-full bg-slate-100 text-slate-900 border-2 border-slate-300 rounded-xl px-3 py-2 text-sm font-bold outline-none">
+                                <option v-for="d in currentDays" :value="Number(d.dateNum)" :key="d.dateStr">
+                                    วันที่ {{ d.dateNum }} ({{ d.dayName }})
+                                </option>
                             </select>
-                            <button @click="removeRider(idx)" class="text-red-600 hover:text-red-800 p-2" title="ลบไรเดอร์">
-                                <i class="fa-solid fa-trash"></i>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-extrabold text-slate-700 mb-1">ถึงวันที่:</label>
+                            <select v-model.number="emergencyEndDay" class="w-full bg-slate-100 text-slate-900 border-2 border-slate-300 rounded-xl px-3 py-2 text-sm font-bold outline-none">
+                                <option v-for="d in currentDays" :value="Number(d.dateNum)" :key="d.dateStr">
+                                    วันที่ {{ d.dateNum }} ({{ d.dayName }})
+                                </option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-extrabold text-slate-700 mb-1">เหตุผลการปิดระบบ:</label>
+                        <input type="text" v-model="emergencyReason" placeholder="เช่น ฝนตกหนัก/น้ำท่วม, ปิดปรับปรุงระบบ"
+                            class="w-full bg-slate-100 text-slate-900 border-2 border-slate-300 rounded-xl px-3 py-2 text-sm font-bold outline-none focus:border-red-500">
+                        <div class="flex flex-wrap gap-1.5 mt-2">
+                            <button v-for="preset in ['ระบบปิดบริการ', 'ฝนตกหนัก/น้ำท่วม', 'ปิดปรับปรุงระบบ', 'วันหยุดนักขัตฤกษ์']" :key="preset"
+                                @click="emergencyReason = preset"
+                                class="text-[11px] bg-slate-100 hover:bg-red-50 text-slate-700 border border-slate-300 px-2 py-0.5 rounded-full font-semibold cursor-pointer">
+                                {{ preset }}
                             </button>
                         </div>
                     </div>
-                </div>
 
-                <div class="bg-slate-100 px-6 py-4 flex items-center justify-end gap-3 border-t">
-                    <button @click="showRiderModal = false" class="px-4 py-2 rounded-xl text-slate-600 hover:bg-slate-200 font-bold text-sm">ปิด</button>
-                    <button @click="saveRidersList" class="bg-orange-600 hover:bg-orange-700 text-white px-5 py-2 rounded-xl font-bold text-sm shadow">บันทึกรายชื่อ</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Monthly Holiday Manager Modal -->
-        <div v-if="showHolidayModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm animate-fadeIn">
-            <div class="bg-white rounded-2xl shadow-2xl border-4 border-amber-400 w-full max-w-md overflow-hidden flex flex-col">
-                <div class="bg-slate-900 text-white px-6 py-4 flex items-center justify-between border-b border-amber-400">
-                    <h3 class="font-extrabold text-lg text-amber-300 flex items-center gap-2">
-                        <i class="fa-solid fa-calendar-minus"></i> วันหยุดประจำเดือน (ค่าเริ่มต้น 10, 20)
-                    </h3>
-                    <button @click="showHolidayModal = false" class="text-slate-400 hover:text-white text-xl font-bold">&times;</button>
-                </div>
-                <div class="p-6 space-y-4">
-                    <p class="text-xs text-slate-600">กำหนดวันที่ต้องการให้เป็นวันปิดระบบประจำเดือนอัตโนมัติ:</p>
-                    <div class="flex gap-2">
-                        <input type="number" v-model.number="newHolidayDay" min="1" max="31" placeholder="ใส่วันที่ (1-31)" class="flex-grow px-3 py-2 border rounded-xl font-bold text-sm outline-none focus:ring-2 focus:ring-purple-500">
-                        <button @click="addMonthlyHoliday" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-xl text-sm font-bold shadow">เพิ่มวันหยุด</button>
-                    </div>
-                    <div class="flex flex-wrap gap-2 pt-2">
-                        <span v-for="(d, idx) in monthlyDefaultHolidays" :key="d" class="inline-flex items-center gap-1.5 bg-purple-100 text-purple-800 px-3 py-1.5 rounded-full font-bold text-sm border border-purple-300">
-                            วันที่ {{ d }}
-                            <button @click="removeMonthlyHoliday(idx)" class="text-purple-600 hover:text-purple-900 ml-1">&times;</button>
-                        </span>
-                    </div>
-                </div>
-                <div class="bg-slate-100 px-6 py-4 flex items-center justify-end gap-3 border-t">
-                    <button @click="showHolidayModal = false" class="px-4 py-2 rounded-xl text-slate-600 hover:bg-slate-200 font-bold text-sm">ปิด</button>
-                    <button @click="saveMonthlyHolidaysConfig" class="bg-purple-600 hover:bg-purple-700 text-white px-5 py-2 rounded-xl font-bold text-sm shadow">บันทึกและอัปเดตตาราง</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Emergency Closure Modal -->
-        <div v-if="showEmergencyModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm animate-fadeIn">
-            <div class="bg-white rounded-2xl shadow-2xl border-4 border-amber-400 w-full max-w-md overflow-hidden flex flex-col">
-                <div class="bg-slate-900 text-white px-6 py-4 flex items-center justify-between border-b border-amber-400">
-                    <h3 class="font-extrabold text-lg text-amber-300 flex items-center gap-2">
-                        <i class="fa-solid fa-triangle-exclamation"></i> ปิดระบบฉุกเฉิน
-                    </h3>
-                    <button @click="showEmergencyModal = false" class="text-slate-400 hover:text-white text-xl font-bold">&times;</button>
-                </div>
-                <div class="p-6 space-y-4">
-                    <p class="text-xs text-slate-600">เลือกวันที่ต้องการปิดระบบฉุกเฉิน และระบุเหตุผล:</p>
-                    <div>
-                        <label class="block text-xs font-bold text-slate-700 mb-1">เลือกวันที่:</label>
-                        <select v-model="emergencyDateStr" class="w-full px-3 py-2 border rounded-xl font-bold text-sm outline-none bg-white">
-                            <option v-for="d in currentDays" :value="d.dateStr" :key="d.dateStr">
-                                วันที่ {{ d.dateNum }} {{ d.dayName }} ({{ thaiMonths[currentMonth] }})
-                            </option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-slate-700 mb-1">เหตุผลการปิดระบบ:</label>
-                        <input type="text" v-model="emergencyReason" placeholder="เช่น ฝนตกหนักมาก, ปรับปรุงระบบ" class="w-full px-3 py-2 border rounded-xl text-sm outline-none">
-                    </div>
                     <div class="flex gap-2 pt-2">
-                        <button @click="applyEmergencyClosure(true)" class="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 rounded-xl font-bold text-sm shadow">ประกาศปิดฉุกเฉิน</button>
-                        <button @click="applyEmergencyClosure(false)" class="flex-1 bg-slate-200 hover:bg-slate-300 text-slate-700 py-2 rounded-xl font-bold text-sm">ยกเลิกปิดฉุกเฉิน</button>
+                        <button @click="applyEmergencyClosure(true)" class="flex-1 bg-red-600 hover:bg-red-500 text-white py-2.5 rounded-xl font-extrabold text-sm shadow cursor-pointer">
+                            ประกาศปิดระบบ
+                        </button>
+                        <button @click="applyEmergencyClosure(false)" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white py-2.5 rounded-xl font-extrabold text-sm shadow cursor-pointer">
+                            เปิดวิ่งงานปกติ
+                        </button>
                     </div>
-                </div>
-                <div class="bg-slate-100 px-6 py-4 flex items-center justify-end gap-3 border-t">
-                    <button @click="showEmergencyModal = false" class="px-4 py-2 rounded-xl text-slate-600 hover:bg-slate-200 font-bold text-sm">ปิด</button>
                 </div>
             </div>
         </div>
 
-        <!-- Supabase Configuration Modal -->
-        <div v-if="showSupabaseModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm animate-fadeIn">
-            <div class="bg-white rounded-2xl shadow-2xl border-4 border-blue-600 w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
-                <div class="bg-blue-900 text-white px-6 py-4 flex items-center justify-between border-b border-blue-500">
-                    <h3 class="font-extrabold text-lg text-amber-300 flex items-center gap-2">
-                        <i class="fa-solid fa-database"></i> ตั้งค่าการเชื่อมต่อ Supabase (Cloud DB)
-                    </h3>
-                    <button @click="showSupabaseModal = false" class="text-slate-300 hover:text-white text-xl font-bold">&times;</button>
+        <!-- 6. Modal แก้ไขชื่อหัวข้อกะ (เช่น ตารางวิ่งงานกลางวัน / กลางคืน) -->
+        <div v-if="showTitleModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-sm">
+            <div class="bg-white text-slate-900 rounded-3xl shadow-2xl border-4 border-amber-400 w-full max-w-sm p-6 animate-slideUp">
+                <h3 class="text-lg font-black text-slate-900 mb-2">แก้ไขชื่อหัวข้อตาราง</h3>
+                <input type="text" v-model="tempShiftTitle" class="w-full bg-slate-100 text-slate-900 border-2 border-slate-300 rounded-xl px-3 py-2 text-base font-bold outline-none focus:border-orange-500 mb-3">
+                <div class="flex flex-wrap gap-1.5 mb-4">
+                    <button @click="tempShiftTitle = 'ตารางวิ่งงานกลางวัน'" class="text-xs bg-amber-100 text-amber-900 px-2.5 py-1 rounded-full font-bold cursor-pointer">ตารางวิ่งงานกลางวัน</button>
+                    <button @click="tempShiftTitle = 'ตารางวิ่งงานกลางคืน'" class="text-xs bg-indigo-100 text-indigo-900 px-2.5 py-1 rounded-full font-bold cursor-pointer">ตารางวิ่งงานกลางคืน</button>
                 </div>
-                
-                <div class="p-6 overflow-y-auto space-y-4 text-sm flex-grow">
-                    <p class="text-slate-600 text-xs">
-                        เพื่อซิงค์ข้อมูลตารางเวรให้ทุกคนเห็นตรงกันแบบเรียลไทม์บน GitHub Pages กรุณากรอก <b>Supabase URL</b> และ <b>Anon Key</b> จากโปรเจกต์ Supabase ของคุณ:
-                    </p>
+                <div class="flex gap-2">
+                    <button @click="showTitleModal = false" class="flex-1 bg-slate-200 text-slate-800 py-2 rounded-xl font-bold text-sm cursor-pointer">ยกเลิก</button>
+                    <button @click="saveShiftTitle" class="flex-1 bg-orange-600 text-white py-2 rounded-xl font-bold text-sm shadow cursor-pointer">บันทึก</button>
+                </div>
+            </div>
+        </div>
 
-                    <div>
-                        <label class="block font-bold text-slate-700 mb-1">Supabase Project URL:</label>
-                        <input type="text" v-model="supabaseConfig.url" placeholder="https://xxxxxx.supabase.co" class="w-full px-3 py-2 border rounded-xl font-mono text-xs outline-none focus:ring-2 focus:ring-blue-500">
+        <!-- 7. Modal เปลี่ยนรหัสผ่านแอดมิน -->
+        <div v-if="showPinModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-sm">
+            <div class="bg-white text-slate-900 rounded-3xl shadow-2xl border-4 border-amber-400 w-full max-w-sm p-6 animate-slideUp">
+                <h3 class="text-lg font-black text-slate-900 mb-1">เปลี่ยนรหัสผ่านแอดมิน</h3>
+                <p class="text-xs text-slate-600 mb-3">รหัสผ่านใหม่จะถูกบันทึกลง Cloud เพื่อให้แอดมินใช้ตรงกันทุกเครื่อง</p>
+                <input type="text" v-model="newAdminPin" placeholder="ตั้งรหัสผ่านใหม่ (อย่างน้อย 4 ตัว)" class="w-full bg-slate-100 text-slate-900 border-2 border-slate-300 rounded-xl px-3 py-2 text-center text-lg font-extrabold outline-none focus:border-orange-500 mb-4">
+                <div class="flex gap-2">
+                    <button @click="showPinModal = false" class="flex-1 bg-slate-200 text-slate-800 py-2 rounded-xl font-bold text-sm cursor-pointer">ยกเลิก</button>
+                    <button @click="saveNewAdminPin" class="flex-1 bg-orange-600 text-white py-2 rounded-xl font-bold text-sm shadow cursor-pointer">บันทึกรหัสใหม่</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 8. Modal ตั้งค่า Supabase และคัดลอกคำสั่ง SQL -->
+        <div v-if="showSupabaseModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-sm">
+            <div class="bg-white text-slate-900 rounded-3xl shadow-2xl border-4 border-teal-600 w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh] animate-slideUp">
+                <div class="bg-teal-900 text-white px-5 py-4 flex items-center justify-between">
+                    <h3 class="font-extrabold text-base sm:text-lg text-amber-300 flex items-center gap-2">
+                        <i class="fa-solid fa-database"></i> ตั้งค่า Supabase & คำสั่งสร้างตาราง SQL
+                    </h3>
+                    <button @click="showSupabaseModal = false" class="text-slate-300 hover:text-white text-2xl leading-none cursor-pointer">&times;</button>
+                </div>
+
+                <div class="p-5 overflow-y-auto space-y-4 text-sm">
+                    <div class="bg-emerald-50 border border-emerald-300 rounded-xl p-3 text-xs text-emerald-900">
+                        <strong>สถานะปัจจุบัน:</strong> {{ dbStatus === 'connected' ? 'เชื่อมต่อฐานข้อมูล Supabase สำเร็จแล้ว' : 'กำลังทำงานในโหมดสำรองข้อมูลในเครื่อง (กรุณารันคำสั่ง SQL ด้านล่างใน Supabase)' }}
                     </div>
 
                     <div>
-                        <label class="block font-bold text-slate-700 mb-1">Supabase Anon / Public Key:</label>
-                        <input type="password" v-model="supabaseConfig.anonKey" placeholder="eyJhbGciOiJIUzI1NiIsIn..." class="w-full px-3 py-2 border rounded-xl font-mono text-xs outline-none focus:ring-2 focus:ring-blue-500">
+                        <label class="block text-xs font-extrabold text-slate-700 mb-1">Supabase Project URL:</label>
+                        <input type="text" v-model="supabaseConfig.url" class="w-full bg-slate-100 text-slate-900 border border-slate-300 rounded-xl px-3 py-2 font-mono text-xs outline-none">
                     </div>
 
-                    <div class="bg-slate-100 p-4 rounded-xl border border-slate-200 text-xs space-y-2">
-                        <p class="font-bold text-slate-800">📋 คำสั่ง SQL สร้างตารางใน Supabase SQL Editor:</p>
-                        <pre class="bg-slate-900 text-amber-300 p-2.5 rounded-lg overflow-x-auto font-mono text-[11px]">
-create table if not exists schedules (
+                    <div>
+                        <label class="block text-xs font-extrabold text-slate-700 mb-1">Supabase Publishable / Anon Key:</label>
+                        <input type="text" v-model="supabaseConfig.anonKey" class="w-full bg-slate-100 text-slate-900 border border-slate-300 rounded-xl px-3 py-2 font-mono text-xs outline-none">
+                    </div>
+
+                    <div class="bg-slate-100 p-3.5 rounded-2xl border border-slate-300">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs font-extrabold text-slate-800">📋 คำสั่ง SQL (วางใน Supabase SQL Editor แล้วกด Run):</span>
+                            <button @click="copySqlCode" class="bg-slate-900 hover:bg-slate-700 text-amber-300 px-2.5 py-1 rounded-lg text-xs font-bold cursor-pointer">
+                                <i class="fa-regular fa-copy"></i> คัดลอก SQL
+                            </button>
+                        </div>
+                        <pre id="sql-snippet" class="bg-slate-900 text-amber-300 p-3 rounded-xl overflow-x-auto font-mono text-[11px] leading-relaxed">create table if not exists schedules (
   month_key text primary key,
   days jsonb,
-  updated_at timestamp default now()
+  updated_at timestamp with time zone default now()
 );
 
 create table if not exists settings (
   key text primary key,
   value jsonb,
-  updated_at timestamp default now()
-);</pre>
+  updated_at timestamp with time zone default now()
+);
+
+alter table schedules enable row level security;
+alter table settings enable row level security;
+
+create policy "Public full access schedules" on schedules for all using (true) with check (true);
+create policy "Public full access settings" on settings for all using (true) with check (true);</pre>
                     </div>
                 </div>
 
-                <div class="bg-slate-100 px-6 py-4 flex items-center justify-between border-t">
-                    <button @click="testAndSaveSupabaseConfig" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-xl font-bold text-sm shadow">บันทึกและเชื่อมต่อ</button>
-                    <button @click="showSupabaseModal = false" class="px-4 py-2 rounded-xl text-slate-600 hover:bg-slate-200 font-bold text-sm">ปิด</button>
+                <div class="bg-slate-100 px-5 py-3.5 flex items-center justify-between border-t border-slate-200">
+                    <button @click="saveAndReconnectSupabase" class="bg-teal-600 hover:bg-teal-500 text-white px-4 py-2 rounded-xl font-bold text-sm shadow cursor-pointer">
+                        บันทึกและทดสอบการเชื่อมต่อ
+                    </button>
+                    <button @click="showSupabaseModal = false" class="bg-slate-200 hover:bg-slate-300 text-slate-800 px-4 py-2 rounded-xl font-bold text-sm cursor-pointer">
+                        ปิด
+                    </button>
                 </div>
             </div>
         </div>
 
-        <!-- Admin PIN Modal -->
-        <div v-if="showAdminPrompt" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm animate-fadeIn">
-            <div class="bg-white rounded-2xl shadow-2xl border-4 border-amber-400 w-full max-w-sm p-6 text-center">
-                <div class="w-16 h-16 bg-amber-400 rounded-full flex items-center justify-center text-3xl mx-auto mb-4 shadow-lg">
-                    🔒
-                </div>
-                <h
+    </div>
+
+    <!-- Vue 3 Application Logic -->
+    <script>
+        const { createApp, ref, computed, onMounted } = Vue
+
+        // ค่าเชื่อมต่อ Supabase เริ่มต้นที่ฝังไว้ในโค้ดทันที
+        const DEFAULT_SUPABASE_URL = 'https://xqxsiapocrzmykzogjeu.supabase.co'
+        const DEFAULT_SUPABASE_KEY = 'sb_publishable_EyG8gR-RRd1d-GgSIMrT3Q_eSnTfJDm'
+
+        createApp({
+            setup() {
+                const thaiMonths = [
+                    'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
+                    'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'
+                ]
+                const thaiDaysOfWeek = ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์']
+
+                // ตั้งค่าเดือนและปีปัจจุบันตามปฏิทินจริง
+                const now = new Date()
+                const currentMonth = ref(now.getMonth())
+                const currentYear = ref(now.getFullYear())
+                const availableYears = [now.getFullYear() - 1, now.getFullYear(), now.getFullYear() + 1, now.getFullYear() + 2]
+
+                // ตัวเลือกช่วงวันที่บนโปสเตอร์
+                const dateRangeMode = ref('all')
+                const customStartDay = ref(17)
+                const customEndDay = ref(30)
+
+                // หัวข้อกะวิ่งงาน
+                const shiftTitle = ref('ตารางวิ่งงานกลางวัน')
+
+                // วันหยุดประจำเดือนเริ่มต้น (วันที่ 10 และ 20 ของทุกเดือน)
+                const monthlyDefaultHolidays = ref([10, 20])
+
+                // ข้อมูลไรเดอร์เริ่มต้น (เหมือนในภาพต้นฉบับ)
+                const riders = ref([
+                    { id: 1, name: 'พี่สาว', helmetColor: '#EC4899', heart: '🩷', hairStyle: 'long', hasGlasses: false },
+                    { id: 2, name: 'เดียร์', helmetColor: '#F97316', heart: '🧡', hairStyle: 'short', hasGlasses: false },
+                    { id: 3, name: 'กาย', helmetColor: '#2563EB', heart: '💙', hairStyle: 'short', hasGlasses: true },
+                    { id: 4, name: 'เน', helmetColor: '#16A34A', heart: '💚', hairStyle: 'long', hasGlasses: false },
+                    { id: 5, name: 'กาน', helmetColor: '#EAB308', heart: '💛', hairStyle: 'short', hasGlasses: false },
+                    { id: 6, name: 'จักร', helmetColor: '#9333EA', heart: '💜', hairStyle: 'short', hasGlasses: false }
+                ])
+
+                // สถานะ Admin Mode (เริ่มต้นเป็น Viewer Mode เสมอ ไม่มีหน้าต่างเด้งขวาง)
+                const adminMode = ref(false)
+                const adminPin = ref('1234')
+                const showAdminLoginModal = ref(false)
+                const adminPinInput = ref('')
+                const adminLoginError = ref('')
+
+                // ตัวกรองและสถานะ Export
+                const selectedRiderFilter = ref(null)
+                const isExporting = ref(false)
+
+                // ระบบแจ้งเตือน Toast
+                const toast = ref({ show: false, message: '', type: 'info' })
+                let toastTimer = null
+                const showToast = (message, type = 'success') => {
+                    toast.value = { show: true, message, type }
+                    clearTimeout(toastTimer)
+                    toastTimer = setTimeout(() => { toast.value.show = false }, 3200)
+                }
+
+                // การตั้งค่า Supabase
+                const dbStatus = ref('connecting')
+                const showSupabaseModal = ref(false)
+                const supabaseConfig = ref({
+                    url: localStorage.getItem('wolf_sb_url') || DEFAULT_SUPABASE_URL,
+                    anonKey: localStorage.getItem('wolf_sb_key') || DEFAULT_SUPABASE_KEY
+                })
+                let supabaseClient = null
+
+                const initSupabase = () => {
+                    try {
+                        if (supabaseConfig.value.url && supabaseConfig.value.anonKey) {
+                            supabaseClient = window.supabase.createClient(
+                                supabaseConfig.value.url.trim(),
+                                supabaseConfig.value.anonKey.trim()
+                            )
+                            return true
+                        }
+                    } catch (err) {
+                        console.warn('Supabase init error:', err)
+                    }
+                    return false
+                }
+
+                // เก็บข้อมูลตารางแต่ละเดือน
+                const monthlySchedules = ref({})
+                const monthKey = computed(() => `${currentYear.value}-${String(currentMonth.value + 1).padStart(2, '0')}`)
+                const daysInCurrentMonth = computed(() => new Date(currentYear.value, currentMonth.value + 1, 0).getDate())
+
+                // สร้างตารางเริ่มต้นของแต่ละเดือนอิงตามปฏิทินจริง
+                const generateDefaultMonthDays = (year, month) => {
+                    const totalDays = new Date(year, month + 1, 0).getDate()
+                    const result = []
+                    const names = riders.value.map(r => r.name)
+
+                    for (let d = 1; d <= totalDays; d++) {
+                        const dateObj = new Date(year, month, d)
+                        const dow = dateObj.getDay() // 0 = อาทิตย์, 6 = เสาร์
+                        const isWeekend = (dow === 0 || dow === 6)
+                        const isHoliday = monthlyDefaultHolidays.value.includes(d)
+                        const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`
+
+                        let assignedRiders = []
+                        if (!isHoliday && names.length > 0) {
+                            const count = Math.min(3, names.length)
+                            for (let i = 0; i < count; i++) {
+                                assignedRiders.push(names[(d + i) % names.length])
+                            }
+                        }
+
+                        result.push({
+                            dateStr,
+                            dateNum: String(d),
+                            dayName: thaiDaysOfWeek[dow],
+                            isWeekend,
+                            isClosed: isHoliday,
+                            closeReason: isHoliday ? 'ระบบปิดบริการ' : '',
+                            riders: assignedRiders
+                        })
+                    }
+                    return result
+                }
+
+                // บันทึกลง LocalStorage
+                const saveToLocalStorage = () => {
+                    localStorage.setItem('wolf_schedules_v2', JSON.stringify(monthlySchedules.value))
+                    localStorage.setItem('wolf_riders_v2', JSON.stringify(riders.value))
+                    localStorage.setItem('wolf_holidays_v2', JSON.stringify(monthlyDefaultHolidays.value))
+                    localStorage.setItem('wolf_shift_title_v2', shiftTitle.value)
+                    localStorage.setItem('wolf_admin_pin_v2', adminPin.value)
+                }
+
+                // โหลดข้อมูลจาก LocalStorage
+                const loadFromLocalStorage = () => {
+                    try {
+                        const r = localStorage.getItem('wolf_riders_v2')
+                        if (r) riders.value = JSON.parse(r)
+
+                        const h = localStorage.getItem('wolf_holidays_v2')
+                        if (h) monthlyDefaultHolidays.value = JSON.parse(h)
+
+                        const t = localStorage.getItem('wolf_shift_title_v2')
+                        if (t) shiftTitle.value = t
+
+                        const p = localStorage.getItem('wolf_admin_pin_v2')
+                        if (p) adminPin.value = p
+
+                        const s = localStorage.getItem('wolf_schedules_v2')
+                        if (s) monthlySchedules.value = JSON.parse(s)
+                    } catch (e) {
+                        console.warn('LocalStorage read error:', e)
+                    }
+                }
+
+                // บันทึกขึ้น Supabase Cloud + LocalStorage
+                const syncAllToCloud = async () => {
+                    saveToLocalStorage()
+                    if (!supabaseClient) return
+
+                    try {
+                        const { error: settingsErr } = await supabaseClient.from('settings').upsert([
+                            { key: 'riders', value: riders.value, updated_at: new Date().toISOString() },
+                            { key: 'holidays', value: monthlyDefaultHolidays.value, updated_at: new Date().toISOString() },
+                            { key: 'shift_title', value: shiftTitle.value, updated_at: new Date().toISOString() },
+                            { key: 'admin_pin', value: adminPin.value, updated_at: new Date().toISOString() }
+                        ])
+
+                        const { error: schedErr } = await supabaseClient.from('schedules').upsert({
+                            month_key: monthKey.value,
+                            days: monthlySchedules.value[monthKey.value],
+                            updated_at: new Date().toISOString()
+                        })
+
+                        if (!settingsErr && !schedErr) {
+                            dbStatus.value = 'connected'
+                        } else {
+                            dbStatus.value = 'local'
+                        }
+                    } catch (err) {
+                        dbStatus.value = 'local'
+                    }
+                }
+
+                // โหลดข้อมูลเริ่มต้นแบบเงียบๆ ไม่เด้งป๊อปอัปขวางหน้าจอ
+                const initializeData = async () => {
+                    loadFromLocalStorage()
+                    const ready = initSupabase()
+
+                    if (ready && supabaseClient) {
+                        try {
+                            const { data: settingsRows, error: sErr } = await supabaseClient.from('settings').select('*')
+                            if (!sErr && settingsRows) {
+                                dbStatus.value = 'connected'
+                                settingsRows.forEach(row => {
+                                    if (row.key === 'riders' && Array.isArray(row.value)) riders.value = row.value
+                                    if (row.key === 'holidays' && Array.isArray(row.value)) monthlyDefaultHolidays.value = row.value
+                                    if (row.key === 'shift_title' && typeof row.value === 'string') shiftTitle.value = row.value
+                                    if (row.key === 'admin_pin' && typeof row.value === 'string') adminPin.value = row.value
+                                })
+                            } else {
+                                dbStatus.value = 'local'
+                            }
+
+                            const { data: schedRow, error: schErr } = await supabaseClient
+                                .from('schedules')
+                                .select('days')
+                                .eq('month_key', monthKey.value)
+                                .maybeSingle()
+
+                            if (!schErr) {
+                                dbStatus.value = 'connected'
+                                if (schedRow && Array.isArray(schedRow.days)) {
+                                    monthlySchedules.value[monthKey.value] = schedRow.days
+                                } else if (!monthlySchedules.value[monthKey.value]) {
+                                    monthlySchedules.value[monthKey.value] = generateDefaultMonthDays(currentYear.value, currentMonth.value)
+                                    await syncAllToCloud()
+                                }
+                                saveToLocalStorage()
+                                return
+                            }
+                        } catch (e) {
+                            dbStatus.value = 'local'
+                        }
+                    } else {
+                        dbStatus.value = 'local'
+                    }
+
+                    if (!monthlySchedules.value[monthKey.value]) {
+                        monthlySchedules.value[monthKey.value] = generateDefaultMonthDays(currentYear.value, currentMonth.value)
+                        saveToLocalStorage()
+                    }
+                }
+
+                onMounted(() => {
+                    initializeData()
+                })
+
+                // เปลี่ยนเดือนหรือปี
+                const onMonthOrYearChange = async () => {
+                    selectedRiderFilter.value = null
+                    customEndDay.value = Math.min(customEndDay.value, daysInCurrentMonth.value)
+
+                    if (!monthlySchedules.value[monthKey.value]) {
+                        if (supabaseClient && dbStatus.value === 'connected') {
+                            try {
+                                const { data } = await supabaseClient
+                                    .from('schedules')
+                                    .select('days')
+                                    .eq('month_key', monthKey.value)
+                                    .maybeSingle()
+
+                                if (data && Array.isArray(data.days)) {
+                                    monthlySchedules.value[monthKey.value] = data.days
+                                    saveToLocalStorage()
+                                    return
+                                }
+                            } catch (e) {}
+                        }
+                        monthlySchedules.value[monthKey.value] = generateDefaultMonthDays(currentYear.value, currentMonth.value)
+                        await syncAllToCloud()
+                    }
+                }
+
+                const currentDays = computed(() => monthlySchedules.value[monthKey.value] || [])
+
+                // วันที่ที่แสดงบนโปสเตอร์ตามช่วงวันที่เลือก
+                const posterDays = computed(() => {
+                    const all = currentDays.value
+                    if (dateRangeMode.value === '1-15') {
+                        return all.filter(d => Number(d.dateNum) >= 1 && Number(d.dateNum) <= 15)
+                    }
+                    if (dateRangeMode.value === '16-end') {
+                        return all.filter(d => Number(d.dateNum) >= 16)
+                    }
+                    if (dateRangeMode.value === 'custom') {
+                        const start = Math.max(1, Math.min(customStartDay.value || 1, customEndDay.value || daysInCurrentMonth.value))
+                        const end = Math.min(daysInCurrentMonth.value, Math.max(customStartDay.value || 1, customEndDay.value || daysInCurrentMonth.value))
+                        return all.filter(d => Number(d.dateNum) >= start && Number(d.dateNum) <= end)
+                    }
+                    return all
+                })
+
+                // กรองเพิ่มตามไรเดอร์ที่คลิกเลือก
+                const filteredPosterDays = computed(() => {
+                    if (!selectedRiderFilter.value) return posterDays.value
+                    return posterDays.value.filter(d => !d.isClosed && d.riders.includes(selectedRiderFilter.value))
+                })
+
+                // ป้ายช่วงวันที่บนหัวโปสเตอร์ เช่น "1 - 30 พฤศจิกายน 2569"
+                const posterDateRangeLabel = computed(() => {
+                    const days = posterDays.value
+                    const mName = thaiMonths[currentMonth.value]
+                    const beYear = currentYear.value + 543
+                    if (days.length === 0) return `${mName} ${beYear}`
+                    const first = days[0].dateNum
+                    const last = days[days.length - 1].dateNum
+                    return `${first} - ${last} ${mName} ${beYear}`
+                })
+
+                const getRiderInfo = (name) => {
+                    return riders.value.find(r => r.name === name) || {
+                        name,
+                        helmetColor: '#64748B',
+                        heart: '🤍',
+                        hairStyle: 'short',
+                        hasGlasses: false
+                    }
+                }
+
+                const getRiderShiftCount = (riderName) => {
+                    return posterDays.value.filter(d => !d.isClosed && d.riders.includes(riderName)).length
+                }
+
+                const isRiderWorkingOnDay = (day, riderName) => {
+                    if (!riderName) return false
+                    return !day.isClosed && day.riders.includes(riderName)
+                }
+
+                // ระบบปลดล็อกแอดมิน
+                const openAdminLogin = () => {
+                    adminPinInput.value = ''
+                    adminLoginError.value = ''
+                    showAdminLoginModal.value = true
+                }
+
+                const submitAdminLogin = () => {
+                    if (adminPinInput.value.trim() === adminPin.value) {
+                        adminMode.value = true
+                        showAdminLoginModal.value = false
+                        adminPinInput.value = ''
+                        showToast('ปลดล็อกโหมดแอดมินเรียบร้อยแล้ว', 'success')
+                    } else {
+                        adminLoginError.value = 'รหัสผ่านไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง'
+                    }
+                }
+
+                const lockAdminMode = () => {
+                    adminMode.value = false
+                    showToast('ล็อกกลับเป็นโหมดดูตารางปกติแล้ว', 'info')
+                }
+
+                // แก้ไขเวรรายวัน
+                const showDayModal = ref(false)
+                const editingDay = ref({ dateStr: '', dateNum: '', dayName: '', isWeekend: false, isClosed: false, closeReason: '', riders: [] })
+
+                const openEditDayModal = (day) => {
+                    editingDay.value = JSON.parse(JSON.stringify(day))
+                    showDayModal.value = true
+                }
+
+                const saveEditingDay = async () => {
+                    const idx = currentDays.value.findIndex(d => d.dateStr === editingDay.value.dateStr)
+                    if (idx !== -1) {
+                        if (editingDay.value.isClosed) {
+                            editingDay.value.riders = []
+                        }
+                        monthlySchedules.value[monthKey.value][idx] = JSON.parse(JSON.stringify(editingDay.value))
+                        await syncAllToCloud()
+                        showToast(`บันทึกตารางวันที่ ${editingDay.value.dateNum} เรียบร้อย`, 'success')
+                    }
+                    showDayModal.value = false
+                }
+
+                // จัดการไรเดอร์
+                const showRiderModal = ref(false)
+                const openRiderManager = () => { showRiderModal.value = true }
+                const addNewRider = () => {
+                    riders.value.push({
+                        id: Date.now(),
+                        name: 'ไรเดอร์ใหม่',
+                        helmetColor: '#0D9488',
+                        heart: '❤️',
+                        hairStyle: 'short',
+                        hasGlasses: false
+                    })
+                }
+                const removeRider = (idx) => {
+                    if (riders.value.length <= 1) {
+                        showToast('ต้องมีไรเดอร์อย่างน้อย 1 คนในระบบ', 'error')
+                        return
+                    }
+                    riders.value.splice(idx, 1)
+                }
+                const saveRidersList = async () => {
+                    await syncAllToCloud()
+                    showRiderModal.value = false
+                    showToast('บันทึกรายชื่อไรเดอร์เรียบร้อย', 'success')
+                }
+
+                // จัดการวันหยุดประจำเดือน (ค่าเริ่มต้น 10 และ 20)
+                const showHolidayModal = ref(false)
+                const newHolidayDay = ref('')
+                const openHolidayManager = () => { showHolidayModal.value = true }
+                const addMonthlyHoliday = () => {
+                    const d = parseInt(newHolidayDay.value)
+                    if (d >= 1 && d <= 31 && !monthlyDefaultHolidays.value.includes(d)) {
+                        monthlyDefaultHolidays.value.push(d)
+                        monthlyDefaultHolidays.value.sort((a, b) => a - b)
+                        newHolidayDay.value = ''
+                    }
+                }
+                const removeMonthlyHoliday = (idx) => {
+                    monthlyDefaultHolidays.value.splice(idx, 1)
+                }
+                const saveMonthlyHolidaysConfig = async () => {
+                    // อัปเดตวันหยุดประจำเดือนลงในเดือนปัจจุบันทันที
+                    const days = monthlySchedules.value[monthKey.value] || []
+                    days.forEach(d => {
+                        const num = Number(d.dateNum)
+                        if (monthlyDefaultHolidays.value.includes(num)) {
+                            d.isClosed = true
+                            d.closeReason = d.closeReason || 'ระบบปิดบริการ'
+                            d.riders = []
+                        }
+                    })
+                    await syncAllToCloud()
+                    showHolidayModal.value = false
+                    showToast('บันทึกวันหยุดประจำเดือนและอัปเดตตารางแล้ว', 'success')
+                }
+
+                // ปิดระบบฉุกเฉิน
+                const showEmergencyModal = ref(false)
+                const emergencyStartDay = ref(1)
+                const emergencyEndDay = ref(1)
+                const emergencyReason = ref('ระบบปิดบริการ')
+
+                const openEmergencyModal = () => {
+                    const firstDay = posterDays.value.length > 0 ? Number(posterDays.value[0].dateNum) : 1
+                    emergencyStartDay.value = firstDay
+                    emergencyEndDay.value = firstDay
+                    showEmergencyModal.value = true
+                }
+
+                const applyEmergencyClosure = async (shouldClose) => {
+                    const start = Math.min(emergencyStartDay.value, emergencyEndDay.value)
+                    const end = Math.max(emergencyStartDay.value, emergencyEndDay.value)
+                    const days = monthlySchedules.value[monthKey.value] || []
+                    const names = riders.value.map(r => r.name)
+
+                    days.forEach(d => {
+                        const num = Number(d.dateNum)
+                        if (num >= start && num <= end) {
+                            d.isClosed = shouldClose
+                            if (shouldClose) {
+                                d.closeReason = emergencyReason.value.trim() || 'ระบบปิดบริการ'
+                                d.riders = []
+                            } else {
+                                d.closeReason = ''
+                                if (d.riders.length === 0 && names.length > 0) {
+                                    d.riders = [names[num % names.length], names[(num + 1) % names.length]]
+                                }
+                            }
+                        }
+                    })
+
+                    await syncAllToCloud()
+                    showEmergencyModal.value = false
+                    showToast(shouldClose ? `ประกาศปิดระบบวันที่ ${start}-${end} เรียบร้อย` : `เปิดวิ่งงานวันที่ ${start}-${end} เรียบร้อย`, 'success')
+                }
+
+                // แก้ไขชื่อกะ
+                const showTitleModal = ref(false)
+                const tempShiftTitle = ref('')
+                const openShiftTitleModal = () => {
+                    tempShiftTitle.value = shiftTitle.value
+                    showTitleModal.value = true
+                }
+                const saveShiftTitle = async () => {
+                    if (tempShiftTitle.value.trim()) {
+                        shiftTitle.value = tempShiftTitle.value.trim()
+                        await syncAllToCloud()
+                        showToast('อัปเดตชื่อหัวข้อตารางแล้ว', 'success')
+                    }
+                    showTitleModal.value = false
+                }
+
+                // เปลี่ยนรหัสผ่านแอดมิน
+                const showPinModal = ref(false)
+                const newAdminPin = ref('')
+                const openPinChangeModal = () => {
+                    newAdminPin.value = adminPin.value
+                    showPinModal.value = true
+                }
+                const saveNewAdminPin = async () => {
+                    if (newAdminPin.value.trim().length < 4) {
+                        showToast('กรุณาตั้งรหัสผ่านอย่างน้อย 4 ตัวอักษร', 'error')
+                        return
+                    }
+                    adminPin.value = newAdminPin.value.trim()
+                    await syncAllToCloud()
+                    showPinModal.value = false
+                    showToast('เปลี่ยนรหัสผ่านแอดมินเรียบร้อยแล้ว', 'success')
+                }
+
+                // คัดลอก SQL (รองรับ iFrame ด้วย execCommand)
+                const copySqlCode = () => {
+                    const sqlText = document.getElementById('sql-snippet')?.innerText || ''
+                    const textarea = document.createElement('textarea')
+                    textarea.value = sqlText
+                    document.body.appendChild(textarea)
+                    textarea.select()
+                    document.execCommand('copy')
+                    document.body.removeChild(textarea)
+                    showToast('คัดลอกคำสั่ง SQL เรียบร้อยแล้ว!', 'success')
+                }
+
+                const saveAndReconnectSupabase = async () => {
+                    localStorage.setItem('wolf_sb_url', supabaseConfig.value.url.trim())
+                    localStorage.setItem('wolf_sb_key', supabaseConfig.value.anonKey.trim())
+                    await initializeData()
+                    await syncAllToCloud()
+                    showSupabaseModal.value = false
+                    showToast(dbStatus.value === 'connected' ? 'เชื่อมต่อ Supabase สำเร็จ!' : 'บันทึกค่าแล้ว (รอสร้างตาราง SQL ใน Supabase)', 'info')
+                }
+
+                // ส่งออกรูปภาพ PNG ความละเอียดสูง
+                const exportPosterPng = async () => {
+                    const target = document.getElementById('poster-capture-area')
+                    if (!target) return
+                    isExporting.value = true
+                    const prevFilter = selectedRiderFilter.value
+                    selectedRiderFilter.value = null
+
+                    await new Promise(r => setTimeout(r, 120))
+                    try {
+                        const canvas = await html2canvas(target, {
+                            scale: 2.5,
+                            useCORS: true,
+                            backgroundColor: '#FEF08A'
+                        })
+                        const link = document.createElement('a')
+                        link.download = `WolfDelivery-${thaiMonths[currentMonth.value]}-${currentYear.value + 543}.png`
+                        link.href = canvas.toDataURL('image/png')
+                        link.click()
+                        showToast('ดาวน์โหลดรูปภาพตารางเรียบร้อยแล้ว!', 'success')
+                    } catch (err) {
+                        console.error(err)
+                        showToast('เกิดข้อผิดพลาดในการสร้างรูปภาพ', 'error')
+                    } finally {
+                        selectedRiderFilter.value = prevFilter
+                        isExporting.value = false
+                    }
+                }
+
+                return {
+                    thaiMonths, currentMonth, currentYear, availableYears, daysInCurrentMonth,
+                    dateRangeMode, customStartDay, customEndDay, shiftTitle,
+                    monthlyDefaultHolidays, riders, adminMode,
+                    showAdminLoginModal, adminPinInput, adminLoginError,
+                    selectedRiderFilter, isExporting, toast, dbStatus,
+                    showSupabaseModal, supabaseConfig,
+                    currentDays, posterDays, filteredPosterDays, posterDateRangeLabel,
+                    onMonthOrYearChange, getRiderInfo, getRiderShiftCount, isRiderWorkingOnDay,
+                    openAdminLogin, submitAdminLogin, lockAdminMode,
+                    showDayModal, editingDay, openEditDayModal, saveEditingDay,
+                    showRiderModal, openRiderManager, addNewRider, removeRider, saveRidersList,
+                    showHolidayModal, newHolidayDay, openHolidayManager, addMonthlyHoliday, removeMonthlyHoliday, saveMonthlyHolidaysConfig,
+                    showEmergencyModal, emergencyStartDay, emergencyEndDay, emergencyReason, openEmergencyModal, applyEmergencyClosure,
+                    showTitleModal, tempShiftTitle, openShiftTitleModal, saveShiftTitle,
+                    showPinModal, newAdminPin, openPinChangeModal, saveNewAdminPin,
+                    copySqlCode, saveAndReconnectSupabase, exportPosterPng
+                }
+            }
+        }).mount('#app')
+    </script>
+</body>
+</html>
