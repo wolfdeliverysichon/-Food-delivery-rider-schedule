@@ -1,1 +1,929 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wolf Delivery - ตารางวิ่งงานไรเดอร์อัจฉริยะ (Supabase Cloud)</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Prompt -->
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Vue.js 3 -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <!-- html2canvas for Export Image -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <!-- Supabase JS Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Prompt', 'sans-serif'],
+                    },
+                    colors: {
+                        wolf: {
+                            dark: '#0F172A',
+                            blue: '#1E3A8A',
+                            orange: '#F97316',
+                            amber: '#F59E0B',
+                            yellowBg: '#FEF9C3',
+                            cardOrange: '#EA580C',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Prompt', sans-serif;
+            background-color: #FEF3C7;
+            background-image: radial-gradient(#FDE68A 1px, transparent 1px);
+            background-size: 24px 24px;
+        }
+        .card-shadow {
+            box-shadow: 0 8px 25px -5px rgba(249, 115, 22, 0.25), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #FEF3C7;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #F97316;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="min-h-screen text-slate-800 antialiased">
+    <div id="app" class="flex flex-col min-h-screen">
+        
+        <!-- Header Section -->
+        <header class="bg-gradient-to-r from-slate-900 via-blue-950 to-slate-900 text-white shadow-xl border-b-4 border-amber-400 relative overflow-hidden">
+            <div class="absolute -right-10 -bottom-10 opacity-10 pointer-events-none text-9xl">
+                <i class="fa-solid fa-wolf-pack-battalion"></i>
+            </div>
+            
+            <div class="max-w-7xl mx-auto px-4 py-6 sm:py-8 flex flex-col md:flex-row items-center justify-between gap-6 relative z-10">
+                
+                <!-- Left Mascot & DB Status -->
+                <div class="flex items-center gap-3">
+                    <div class="hidden lg:flex items-center gap-3 bg-white/10 px-4 py-2 rounded-2xl backdrop-blur-sm border border-white/15">
+                        <div class="w-12 h-12 bg-orange-500 rounded-full flex items-center justify-center text-2xl shadow-lg ring-2 ring-amber-400">
+                            🛵
+                        </div>
+                        <div>
+                            <p class="text-xs text-amber-300 font-semibold tracking-wide">WOLF RIDER</p>
+                            <p class="text-xs font-bold text-white flex items-center gap-1.5 mt-0.5">
+                                <span class="w-2 h-2 rounded-full" :class="isSupabaseConnected ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'"></span>
+                                {{ isSupabaseConnected ? 'Supabase Sync สำเร็จ' : 'Local Storage Mode' }}
+                            </p>
+                        </div>
+                    </div>
+                </div>
 
+                <!-- Center Title & Month / Year Controls -->
+                <div class="text-center">
+                    <div class="inline-flex items-center gap-2 bg-amber-400 text-slate-900 px-4 py-1.5 rounded-full font-extrabold text-sm mb-3 shadow-md">
+                        <i class="fa-solid fa-shield-dog text-base"></i>
+                        <span>WolfDelivery Cloud</span>
+                    </div>
+                    <h1 class="text-3xl sm:text-5xl font-black tracking-tight text-white drop-shadow-md">
+                        ตารางวิ่งงานกลางวัน
+                    </h1>
+                    
+                    <!-- Month & Year Selector Bar -->
+                    <div class="mt-3 flex flex-wrap items-center justify-center gap-2">
+                        <div class="inline-flex items-center gap-2 bg-slate-800/90 px-4 py-2 rounded-xl border border-amber-400/50 text-amber-300 font-bold text-base shadow-inner">
+                            <i class="fa-regular fa-calendar-days text-amber-400"></i>
+                            <select v-model="currentMonth" @change="onMonthOrYearChange" class="bg-slate-900 text-amber-300 border border-amber-400/40 rounded px-2 py-1 outline-none text-sm font-bold cursor-pointer">
+                                <option v-for="(m, index) in thaiMonths" :value="index" :key="index">{{ m }}</option>
+                            </select>
+                            <select v-model="currentYear" @change="onMonthOrYearChange" class="bg-slate-900 text-amber-300 border border-amber-400/40 rounded px-2 py-1 outline-none text-sm font-bold cursor-pointer">
+                                <option v-for="y in availableYears" :value="y" :key="y">พ.ศ. {{ y + 543 }} (ค.ศ. {{ y }})</option>
+                            </select>
+                        </div>
+
+                        <!-- Date Range Sub-filter -->
+                        <div class="inline-flex items-center gap-1.5 bg-slate-800/90 px-3 py-2 rounded-xl border border-amber-400/50 text-white font-semibold text-xs shadow-inner">
+                            <span>ช่วงวันที่:</span>
+                            <select v-model="dateRangeFilter" class="bg-slate-900 text-white border border-amber-400/40 rounded px-2 py-1 outline-none text-xs cursor-pointer">
+                                <option value="all">ทั้งเดือน</option>
+                                <option value="1-15">วันที่ 1 - 15</option>
+                                <option value="16-end">วันที่ 16 - สิ้นเดือน</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Action Buttons -->
+                <div class="flex items-center gap-3">
+                    <button @click="openSupabaseConfig" class="px-3.5 py-2.5 rounded-xl font-bold text-xs bg-blue-600 hover:bg-blue-500 text-white shadow flex items-center gap-1.5 transition-all">
+                        <i class="fa-solid fa-database"></i>
+                        <span>ตั้งค่า Supabase</span>
+                    </button>
+
+                    <!-- Admin Mode Button -->
+                    <button @click="toggleAdminMode" 
+                        class="px-4 py-2.5 rounded-xl font-bold text-sm transition-all duration-300 flex items-center gap-2 shadow-lg"
+                        :class="adminMode ? 'bg-emerald-500 text-white ring-4 ring-emerald-300 animate-pulse' : 'bg-slate-800 text-amber-300 hover:bg-slate-700 border border-amber-400/40'">
+                        <i :class="adminMode ? 'fa-solid fa-lock-open' : 'fa-solid fa-lock'"></i>
+                        <span>{{ adminMode ? 'แอดมิน (เปิด)' : 'เข้าสู่ระบบแอดมิน' }}</span>
+                    </button>
+                </div>
+
+            </div>
+        </header>
+
+        <!-- Rider Legend Bar & Admin Tools -->
+        <section class="bg-white/90 backdrop-blur-md shadow-md border-b border-amber-200 sticky top-0 z-40">
+            <div class="max-w-7xl mx-auto px-4 py-3 flex flex-col md:flex-row items-center justify-between gap-4">
+                
+                <div class="flex items-center gap-2 text-slate-700 font-bold text-sm">
+                    <i class="fa-solid fa-key text-amber-500"></i>
+                    <span>ไรเดอร์ (คลิกเพื่อกรองเวร):</span>
+                    <button v-if="selectedRiderFilter" @click="selectedRiderFilter = null" class="text-xs bg-slate-200 hover:bg-slate-300 px-2 py-1 rounded-full text-slate-700 ml-1">
+                        <i class="fa-solid fa-xmark mr-1"></i> ล้างตัวกรอง
+                    </button>
+                </div>
+
+                <!-- Rider Pills -->
+                <div class="flex flex-wrap items-center justify-center gap-2 sm:gap-3">
+                    <button v-for="rider in riders" :key="rider.id"
+                        @click="selectedRiderFilter = selectedRiderFilter === rider.name ? null : rider.name"
+                        class="flex items-center gap-2 px-3.5 py-1.5 rounded-full border transition-all duration-200 shadow-sm"
+                        :class="[
+                            selectedRiderFilter === rider.name ? 'ring-4 ring-offset-1 ' + rider.ringColor + ' scale-105' : 'hover:scale-105',
+                            rider.bgBadgeClass
+                        ]">
+                        <span class="text-base">{{ rider.avatar }}</span>
+                        <span class="font-bold text-xs sm:text-sm">{{ rider.name }}</span>
+                        <span class="text-xs bg-white/70 px-1.5 py-0.2 rounded-full font-semibold">{{ getRiderShiftCount(rider.name) }}</span>
+                    </button>
+                </div>
+
+                <!-- Admin Action Buttons -->
+                <div v-if="adminMode" class="flex flex-wrap items-center gap-2">
+                    <button @click="openRiderManager" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow flex items-center gap-1.5">
+                        <i class="fa-solid fa-users-gear"></i> จัดการไรเดอร์
+                    </button>
+                    <button @click="openHolidayManager" class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow flex items-center gap-1.5">
+                        <i class="fa-solid fa-calendar-minus"></i> วันหยุด (10, 20)
+                    </button>
+                    <button @click="openEmergencyModal" class="bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow flex items-center gap-1.5">
+                        <i class="fa-solid fa-triangle-exclamation"></i> ปิดระบบฉุกเฉิน
+                    </button>
+                    <button @click="syncDataToSupabase" :disabled="isSyncing" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow flex items-center gap-1.5">
+                        <i :class="isSyncing ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-cloud-arrow-up'"></i> ซิงค์ข้อมูลขึ้น Cloud
+                    </button>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- Main Schedule Grid Content -->
+        <main class="max-w-7xl mx-auto px-4 py-8 flex-grow w-full">
+            
+            <div id="schedule-export-area" class="bg-amber-50/50 p-2 sm:p-6 rounded-3xl">
+                
+                <!-- Export Header Title inside capture area -->
+                <div class="text-center mb-6 bg-gradient-to-r from-slate-900 via-blue-950 to-slate-900 text-white p-4 rounded-2xl shadow-md border-2 border-amber-400">
+                    <h2 class="text-2xl sm:text-3xl font-black text-amber-300">Wolf Delivery ตารางวิ่งงานกลางวัน</h2>
+                    <p class="text-sm font-semibold text-white/90 mt-1">ประจำเดือน <span class="text-amber-400">{{ thaiMonths[currentMonth] }} พ.ศ. {{ currentYear + 543 }}</span></p>
+                </div>
+
+                <!-- Filter Notification if active -->
+                <div v-if="selectedRiderFilter" class="mb-6 bg-amber-100 border-l-4 border-orange-500 p-4 rounded-r-xl flex items-center justify-between shadow-sm">
+                    <div class="flex items-center gap-3">
+                        <div class="text-2xl">🔍</div>
+                        <div>
+                            <p class="font-bold text-slate-800">กำลังแสดงตารางงานของ: <span class="text-orange-600 font-extrabold text-lg">{{ selectedRiderFilter }}</span></p>
+                            <p class="text-xs text-slate-600">พบทั้งหมด {{ filteredDays.length }} วันในเดือนนี้</p>
+                        </div>
+                    </div>
+                    <button @click="selectedRiderFilter = null" class="text-sm font-semibold text-orange-600 hover:underline">แสดงทั้งหมด</button>
+                </div>
+
+                <!-- Grid of Days -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div v-for="(day, index) in filteredDays" :key="day.dateStr" 
+                        class="rounded-2xl overflow-hidden card-shadow border-2 border-amber-300/60 bg-white transition-all duration-300 hover:shadow-2xl flex flex-col sm:flex-row"
+                        :class="{'ring-4 ring-orange-400': isRiderWorkingOnDay(day, selectedRiderFilter)}">
+                        
+                        <!-- Left Date Block -->
+                        <div class="bg-gradient-to-br from-slate-900 to-blue-950 text-white sm:w-36 p-4 flex flex-col items-center justify-center text-center border-b sm:border-b-0 sm:border-r border-amber-400/30 relative">
+                            <div class="absolute top-2 left-2 text-amber-400/40 text-xs font-mono">#{{ index + 1 }}</div>
+                            <div class="text-4xl sm:text-5xl font-black tracking-tight text-white mb-0.5">{{ day.dateNum }}</div>
+                            <div class="text-sm sm:text-base font-bold text-amber-300 tracking-wide">{{ day.dayName }}</div>
+                            
+                            <!-- Admin edit day button -->
+                            <div v-if="adminMode" class="mt-3 flex items-center gap-1.5">
+                                <button @click="openEditDayModal(day)" class="bg-blue-600 hover:bg-blue-500 text-white px-2 py-1 rounded text-xs shadow flex items-center gap-1">
+                                    <i class="fa-solid fa-pen"></i> จัดเวร
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Right Riders / Status Block -->
+                        <div class="flex-grow bg-gradient-to-r from-orange-500 via-orange-600 to-amber-600 p-4 flex items-center justify-between relative overflow-hidden">
+                            <div class="absolute right-0 bottom-0 opacity-10 text-7xl pointer-events-none transform translate-x-4 translate-y-4">
+                                🛵
+                            </div>
+
+                            <!-- If System Closed -->
+                            <div v-if="day.isClosed" class="w-full bg-red-600 text-white py-3 px-4 rounded-xl font-bold text-center flex items-center justify-center gap-3 shadow-inner border-2 border-red-400 animate-pulse">
+                                <i class="fa-solid fa-lock text-xl"></i>
+                                <div class="text-left">
+                                    <p class="text-lg font-black tracking-wide leading-tight">ปิดระบบ</p>
+                                    <p class="text-xs text-red-100 font-normal">({{ day.closeReason || 'ระบบปิดบริการ' }})</p>
+                                </div>
+                            </div>
+
+                            <!-- If Normal Working Shift -->
+                            <div v-else class="w-full flex flex-wrap items-center justify-around gap-3 py-1">
+                                <div v-for="riderName in day.riders" :key="riderName" 
+                                    class="flex flex-col items-center bg-white/95 backdrop-blur px-3.5 py-2 rounded-xl shadow-md border border-amber-200 transform hover:scale-105 transition-transform"
+                                    :class="{'ring-2 ring-amber-400 bg-amber-50': selectedRiderFilter === riderName}">
+                                    <div class="w-10 h-10 rounded-full flex items-center justify-center text-2xl mb-1 shadow-inner"
+                                        :style="{ backgroundColor: getRiderColor(riderName) + '20' }">
+                                        {{ getRiderAvatar(riderName) }}
+                                    </div>
+                                    <span class="font-bold text-xs sm:text-sm text-slate-900 whitespace-nowrap">{{ riderName }} <span class="text-xs">{{ getRiderHeart(riderName) }}</span></span>
+                                </div>
+
+                                <div v-if="day.riders.length === 0" class="w-full text-center py-2 text-white/90 font-medium text-sm">
+                                    <i class="fa-solid fa-triangle-exclamation mr-1"></i> ยังไม่มีไรเดอร์ลงเวรวันนี้
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- Empty filtered state -->
+                <div v-if="filteredDays.length === 0" class="text-center py-16 bg-white rounded-2xl shadow-md border border-amber-200 mt-6">
+                    <div class="text-5xl mb-3">🔍</div>
+                    <h3 class="text-xl font-bold text-slate-800">ไม่พบตารางงานสำหรับเงื่อนไขนี้</h3>
+                    <p class="text-slate-500 text-sm mt-1">ลองเปลี่ยนช่วงวันที่ หรือเลือกไรเดอร์ท่านอื่น</p>
+                </div>
+
+            </div>
+
+        </main>
+
+        <!-- Footer Action Buttons -->
+        <footer class="bg-slate-900 text-white py-8 border-t-4 border-amber-400 mt-12">
+            <div class="max-w-7xl mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-6 text-center md:text-left">
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 bg-amber-400 rounded-full flex items-center justify-center text-2xl shadow-lg">
+                        🐺
+                    </div>
+                    <div>
+                        <h2 class="font-extrabold text-lg tracking-wide text-amber-300">Wolf Delivery Cloud</h2>
+                        <p class="text-xs text-slate-400">ระบบจัดการตารางวิ่งงานไรเดอร์เชื่อมต่อ Supabase สำหรับ GitHub Pages</p>
+                    </div>
+                </div>
+
+                <div class="flex flex-wrap items-center justify-center gap-3">
+                    <button @click="exportAsImage" :disabled="isExporting" class="bg-emerald-500 hover:bg-emerald-400 text-slate-900 px-5 py-2.5 rounded-xl font-bold text-sm shadow-lg flex items-center gap-2 transition-all">
+                        <i :class="isExporting ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-image'"></i>
+                        <span>{{ isExporting ? 'กำลังสร้างรูปภาพ...' : 'ดาวน์โหลดรูปภาพ (PNG)' }}</span>
+                    </button>
+                    <button @click="printSchedule" class="bg-amber-400 hover:bg-amber-300 text-slate-900 px-5 py-2.5 rounded-xl font-bold text-sm shadow-lg flex items-center gap-2">
+                        <i class="fa-solid fa-print"></i> พิมพ์เอกสาร
+                    </button>
+                </div>
+            </div>
+        </footer>
+
+        <!-- Edit Day Modal -->
+        <div v-if="showDayModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm animate-fadeIn">
+            <div class="bg-white rounded-2xl shadow-2xl border-4 border-amber-400 w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
+                <div class="bg-slate-900 text-white px-6 py-4 flex items-center justify-between border-b border-amber-400">
+                    <h3 class="font-extrabold text-lg text-amber-300 flex items-center gap-2">
+                        <i class="fa-solid fa-calendar-day"></i> จัดเวรวันที่ {{ editingDay.dateNum }} {{ editingDay.dayName }} {{ thaiMonths[currentMonth] }}
+                    </h3>
+                    <button @click="showDayModal = false" class="text-slate-400 hover:text-white text-xl font-bold">&times;</button>
+                </div>
+
+                <div class="p-6 overflow-y-auto space-y-5 flex-grow">
+                    <div class="bg-amber-50 p-4 rounded-xl border border-amber-200 flex items-center justify-between">
+                        <div>
+                            <span class="font-bold text-slate-800 text-sm">สถานะ: ปิดระบบ (วันหยุด)</span>
+                            <p class="text-xs text-slate-500">หากเปิดใช้งาน วันนี้จะแสดงแถบปิดบริการสีแดง</p>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" v-model="editingDay.isClosed" class="sr-only peer">
+                            <div class="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-600"></div>
+                        </label>
+                    </div>
+
+                    <div v-if="!editingDay.isClosed">
+                        <label class="block text-xs font-bold text-slate-700 uppercase mb-2">เลือกไรเดอร์ที่ลงเวรวันนี้:</label>
+                        <div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                            <label v-for="rider in riders" :key="rider.id" 
+                                class="flex items-center gap-2.5 p-3 rounded-xl border cursor-pointer transition-all select-none"
+                                :class="editingDay.riders.includes(rider.name) ? 'bg-orange-50 border-orange-500 ring-2 ring-orange-200' : 'bg-white hover:bg-slate-50 border-slate-200'">
+                                <input type="checkbox" :value="rider.name" v-model="editingDay.riders" class="w-4 h-4 text-orange-600 rounded focus:ring-orange-500">
+                                <span class="text-xl">{{ rider.avatar }}</span>
+                                <span class="font-bold text-sm text-slate-800">{{ rider.name }}</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-slate-100 px-6 py-4 flex items-center justify-end gap-3 border-t">
+                    <button @click="showDayModal = false" class="px-4 py-2 rounded-xl text-slate-600 hover:bg-slate-200 font-bold text-sm">ยกเลิก</button>
+                    <button @click="saveEditingDay" class="bg-orange-600 hover:bg-orange-700 text-white px-5 py-2 rounded-xl font-bold text-sm shadow">บันทึกเวร</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Rider Manager Modal -->
+        <div v-if="showRiderModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm animate-fadeIn">
+            <div class="bg-white rounded-2xl shadow-2xl border-4 border-amber-400 w-full max-w-xl overflow-hidden flex flex-col max-h-[90vh]">
+                <div class="bg-slate-900 text-white px-6 py-4 flex items-center justify-between border-b border-amber-400">
+                    <h3 class="font-extrabold text-lg text-amber-300 flex items-center gap-2">
+                        <i class="fa-solid fa-users-gear"></i> จัดการรายชื่อไรเดอร์
+                    </h3>
+                    <button @click="showRiderModal = false" class="text-slate-400 hover:text-white text-xl font-bold">&times;</button>
+                </div>
+
+                <div class="p-6 overflow-y-auto space-y-4 flex-grow">
+                    <div class="flex justify-between items-center">
+                        <p class="text-xs text-slate-600 font-bold uppercase">รายชื่อไรเดอร์ทั้งหมดในระบบ</p>
+                        <button @click="addNewRider" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow flex items-center gap-1">
+                            <i class="fa-solid fa-plus"></i> เพิ่มไรเดอร์ใหม่
+                        </button>
+                    </div>
+
+                    <div class="space-y-3">
+                        <div v-for="(rider, idx) in riders" :key="rider.id" class="bg-slate-50 p-3 rounded-xl border flex items-center gap-3">
+                            <input type="text" v-model="rider.avatar" class="w-16 text-center text-xl bg-white border rounded-lg py-1" placeholder="อีโมจิ">
+                            <input type="text" v-model="rider.name" class="flex-grow font-bold px-3 py-1 bg-white border rounded-lg text-sm" placeholder="ชื่อไรเดอร์">
+                            <select v-model="rider.heart" class="bg-white border rounded-lg px-2 py-1 text-sm">
+                                <option value="💖">💖</option>
+                                <option value="🧡">🧡</option>
+                                <option value="💛">💛</option>
+                                <option value="💚">💚</option>
+                                <option value="💙">💙</option>
+                                <option value="💜">💜</option>
+                                <option value="❤️">❤️</option>
+                            </select>
+                            <button @click="removeRider(idx)" class="text-red-600 hover:text-red-800 p-2" title="ลบไรเดอร์">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-slate-100 px-6 py-4 flex items-center justify-end gap-3 border-t">
+                    <button @click="showRiderModal = false" class="px-4 py-2 rounded-xl text-slate-600 hover:bg-slate-200 font-bold text-sm">ปิด</button>
+                    <button @click="saveRidersList" class="bg-orange-600 hover:bg-orange-700 text-white px-5 py-2 rounded-xl font-bold text-sm shadow">บันทึกรายชื่อ</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Monthly Holiday Manager Modal -->
+        <div v-if="showHolidayModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm animate-fadeIn">
+            <div class="bg-white rounded-2xl shadow-2xl border-4 border-amber-400 w-full max-w-md overflow-hidden flex flex-col">
+                <div class="bg-slate-900 text-white px-6 py-4 flex items-center justify-between border-b border-amber-400">
+                    <h3 class="font-extrabold text-lg text-amber-300 flex items-center gap-2">
+                        <i class="fa-solid fa-calendar-minus"></i> วันหยุดประจำเดือน (ค่าเริ่มต้น 10, 20)
+                    </h3>
+                    <button @click="showHolidayModal = false" class="text-slate-400 hover:text-white text-xl font-bold">&times;</button>
+                </div>
+                <div class="p-6 space-y-4">
+                    <p class="text-xs text-slate-600">กำหนดวันที่ต้องการให้เป็นวันปิดระบบประจำเดือนอัตโนมัติ:</p>
+                    <div class="flex gap-2">
+                        <input type="number" v-model.number="newHolidayDay" min="1" max="31" placeholder="ใส่วันที่ (1-31)" class="flex-grow px-3 py-2 border rounded-xl font-bold text-sm outline-none focus:ring-2 focus:ring-purple-500">
+                        <button @click="addMonthlyHoliday" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-xl text-sm font-bold shadow">เพิ่มวันหยุด</button>
+                    </div>
+                    <div class="flex flex-wrap gap-2 pt-2">
+                        <span v-for="(d, idx) in monthlyDefaultHolidays" :key="d" class="inline-flex items-center gap-1.5 bg-purple-100 text-purple-800 px-3 py-1.5 rounded-full font-bold text-sm border border-purple-300">
+                            วันที่ {{ d }}
+                            <button @click="removeMonthlyHoliday(idx)" class="text-purple-600 hover:text-purple-900 ml-1">&times;</button>
+                        </span>
+                    </div>
+                </div>
+                <div class="bg-slate-100 px-6 py-4 flex items-center justify-end gap-3 border-t">
+                    <button @click="showHolidayModal = false" class="px-4 py-2 rounded-xl text-slate-600 hover:bg-slate-200 font-bold text-sm">ปิด</button>
+                    <button @click="saveMonthlyHolidaysConfig" class="bg-purple-600 hover:bg-purple-700 text-white px-5 py-2 rounded-xl font-bold text-sm shadow">บันทึกและอัปเดตตาราง</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Emergency Closure Modal -->
+        <div v-if="showEmergencyModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm animate-fadeIn">
+            <div class="bg-white rounded-2xl shadow-2xl border-4 border-amber-400 w-full max-w-md overflow-hidden flex flex-col">
+                <div class="bg-slate-900 text-white px-6 py-4 flex items-center justify-between border-b border-amber-400">
+                    <h3 class="font-extrabold text-lg text-amber-300 flex items-center gap-2">
+                        <i class="fa-solid fa-triangle-exclamation"></i> ปิดระบบฉุกเฉิน
+                    </h3>
+                    <button @click="showEmergencyModal = false" class="text-slate-400 hover:text-white text-xl font-bold">&times;</button>
+                </div>
+                <div class="p-6 space-y-4">
+                    <p class="text-xs text-slate-600">เลือกวันที่ต้องการปิดระบบฉุกเฉิน และระบุเหตุผล:</p>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">เลือกวันที่:</label>
+                        <select v-model="emergencyDateStr" class="w-full px-3 py-2 border rounded-xl font-bold text-sm outline-none bg-white">
+                            <option v-for="d in currentDays" :value="d.dateStr" :key="d.dateStr">
+                                วันที่ {{ d.dateNum }} {{ d.dayName }} ({{ thaiMonths[currentMonth] }})
+                            </option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">เหตุผลการปิดระบบ:</label>
+                        <input type="text" v-model="emergencyReason" placeholder="เช่น ฝนตกหนักมาก, ปรับปรุงระบบ" class="w-full px-3 py-2 border rounded-xl text-sm outline-none">
+                    </div>
+                    <div class="flex gap-2 pt-2">
+                        <button @click="applyEmergencyClosure(true)" class="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 rounded-xl font-bold text-sm shadow">ประกาศปิดฉุกเฉิน</button>
+                        <button @click="applyEmergencyClosure(false)" class="flex-1 bg-slate-200 hover:bg-slate-300 text-slate-700 py-2 rounded-xl font-bold text-sm">ยกเลิกปิดฉุกเฉิน</button>
+                    </div>
+                </div>
+                <div class="bg-slate-100 px-6 py-4 flex items-center justify-end gap-3 border-t">
+                    <button @click="showEmergencyModal = false" class="px-4 py-2 rounded-xl text-slate-600 hover:bg-slate-200 font-bold text-sm">ปิด</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Supabase Configuration Modal -->
+        <div v-if="showSupabaseModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm animate-fadeIn">
+            <div class="bg-white rounded-2xl shadow-2xl border-4 border-blue-600 w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
+                <div class="bg-blue-900 text-white px-6 py-4 flex items-center justify-between border-b border-blue-500">
+                    <h3 class="font-extrabold text-lg text-amber-300 flex items-center gap-2">
+                        <i class="fa-solid fa-database"></i> ตั้งค่าการเชื่อมต่อ Supabase (Cloud DB)
+                    </h3>
+                    <button @click="showSupabaseModal = false" class="text-slate-300 hover:text-white text-xl font-bold">&times;</button>
+                </div>
+                
+                <div class="p-6 overflow-y-auto space-y-4 text-sm flex-grow">
+                    <p class="text-slate-600 text-xs">
+                        เพื่อซิงค์ข้อมูลตารางเวรให้ทุกคนเห็นตรงกันแบบเรียลไทม์บน GitHub Pages กรุณากรอก <b>Supabase URL</b> และ <b>Anon Key</b> จากโปรเจกต์ Supabase ของคุณ:
+                    </p>
+
+                    <div>
+                        <label class="block font-bold text-slate-700 mb-1">Supabase Project URL:</label>
+                        <input type="text" v-model="supabaseConfig.url" placeholder="https://xxxxxx.supabase.co" class="w-full px-3 py-2 border rounded-xl font-mono text-xs outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+
+                    <div>
+                        <label class="block font-bold text-slate-700 mb-1">Supabase Anon / Public Key:</label>
+                        <input type="password" v-model="supabaseConfig.anonKey" placeholder="eyJhbGciOiJIUzI1NiIsIn..." class="w-full px-3 py-2 border rounded-xl font-mono text-xs outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+
+                    <div class="bg-slate-100 p-4 rounded-xl border border-slate-200 text-xs space-y-2">
+                        <p class="font-bold text-slate-800">📋 คำสั่ง SQL สร้างตารางใน Supabase SQL Editor:</p>
+                        <pre class="bg-slate-900 text-amber-300 p-2.5 rounded-lg overflow-x-auto font-mono text-[11px]">
+create table if not exists schedules (
+  month_key text primary key,
+  days jsonb,
+  updated_at timestamp default now()
+);
+
+create table if not exists settings (
+  key text primary key,
+  value jsonb,
+  updated_at timestamp default now()
+);</pre>
+                    </div>
+                </div>
+
+                <div class="bg-slate-100 px-6 py-4 flex items-center justify-between border-t">
+                    <button @click="testAndSaveSupabaseConfig" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-xl font-bold text-sm shadow">บันทึกและเชื่อมต่อ</button>
+                    <button @click="showSupabaseModal = false" class="px-4 py-2 rounded-xl text-slate-600 hover:bg-slate-200 font-bold text-sm">ปิด</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Admin PIN Modal -->
+        <div v-if="showAdminPrompt" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm animate-fadeIn">
+            <div class="bg-white rounded-2xl shadow-2xl border-4 border-amber-400 w-full max-w-sm p-6 text-center">
+                <div class="w-16 h-16 bg-amber-400 rounded-full flex items-center justify-center text-3xl mx-auto mb-4 shadow-lg">
+                    🔒
+                </div>
+                <h3 class="text-xl font-extrabold text-slate-900 mb-2">โหมดผู้ดูแลระบบ (Admin)</h3>
+                <p class="text-xs text-slate-600 mb-4">ใส่รหัสผ่านเพื่อแก้ไขตารางงาน (ค่าเริ่มต้น: <code class="bg-slate-100 px-1.5 py-0.5 rounded font-mono text-orange-600 font-bold">1234</code>)</p>
+                
+                <input type="password" v-model="adminPassword" placeholder="PIN 4 หลัก" @keyup.enter="verifyAdmin" class="w-full text-center tracking-widest text-lg font-bold px-4 py-2 border-2 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none mb-4">
+                
+                <div class="flex gap-2">
+                    <button @click="showAdminPrompt = false; adminPassword = ''" class="flex-1 bg-slate-200 hover:bg-slate-300 text-slate-700 py-2.5 rounded-xl font-bold text-sm">ยกเลิก</button>
+                    <button @click="verifyAdmin" class="flex-1 bg-orange-600 hover:bg-orange-700 text-white py-2.5 rounded-xl font-bold text-sm shadow">เข้าสู่ระบบ</button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Vue App & Supabase Script -->
+    <script>
+        const { createApp, ref, computed, onMounted } = Vue
+
+        createApp({
+            setup() {
+                const thaiMonths = [
+                    'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
+                    'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'
+                ]
+                
+                const thaiDaysOfWeek = ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์']
+
+                const now = new Date()
+                const currentMonth = ref(now.getMonth())
+                const currentYear = ref(now.getFullYear())
+                
+                const availableYears = [now.getFullYear() - 1, now.getFullYear(), now.getFullYear() + 1, now.getFullYear() + 2]
+                const dateRangeFilter = ref('all')
+
+                // Monthly recurring holidays default (10th and 20th of every month)
+                const monthlyDefaultHolidays = ref([10, 20])
+
+                // Riders default data
+                const riders = ref([
+                    { id: 1, name: 'พี่สาว', avatar: '👧🏽💖', ringColor: 'ring-pink-400', bgBadgeClass: 'bg-pink-100 text-pink-700 border-pink-300', heart: '💖' },
+                    { id: 2, name: 'เดียร์', avatar: '🧑🏽🧡', ringColor: 'ring-orange-400', bgBadgeClass: 'bg-orange-100 text-orange-700 border-orange-300', heart: '🧡' },
+                    { id: 3, name: 'กาย', avatar: '👦🏽💙', ringColor: 'ring-blue-400', bgBadgeClass: 'bg-blue-100 text-blue-700 border-blue-300', heart: '💙' },
+                    { id: 4, name: 'เน', avatar: '🧑🏽💚', ringColor: 'ring-emerald-400', bgBadgeClass: 'bg-emerald-100 text-emerald-700 border-emerald-300', heart: '💚' },
+                    { id: 5, name: 'กาน', avatar: '👦🏽💛', ringColor: 'ring-amber-300', bgBadgeClass: 'bg-amber-100 text-amber-700 border-amber-300', heart: '💛' },
+                    { id: 6, name: 'จักร', avatar: '👦🏽💜', ringColor: 'ring-purple-400', bgBadgeClass: 'bg-purple-100 text-purple-700 border-purple-300', heart: '💜' }
+                ])
+
+                const adminMode = ref(false)
+                const showAdminPrompt = ref(false)
+                const adminPassword = ref('')
+                const selectedRiderFilter = ref(null)
+                const isExporting = ref(false)
+                const isSyncing = ref(false)
+
+                // Supabase State
+                const showSupabaseModal = ref(false)
+                const isSupabaseConnected = ref(false)
+                const supabaseConfig = ref({
+                    url: localStorage.getItem('supabase_url') || '',
+                    anonKey: localStorage.getItem('supabase_anon_key') || ''
+                })
+                let supabaseClient = null
+
+                const initSupabase = () => {
+                    if (supabaseConfig.value.url && supabaseConfig.value.anonKey) {
+                        try {
+                            supabaseClient = window.supabase.createClient(supabaseConfig.value.url, supabaseConfig.value.anonKey)
+                            isSupabaseConnected.value = true
+                        } catch (e) {
+                            console.error('Supabase init error:', e)
+                            isSupabaseConnected.value = false
+                        }
+                    } else {
+                        isSupabaseConnected.value = false
+                    }
+                }
+
+                // Schedule data map
+                const monthlySchedules = ref({})
+                const monthKey = computed(() => `${currentYear.value}-${currentMonth.value}`)
+
+                const generateDaysForMonth = (year, month) => {
+                    const daysCount = new Date(year, month + 1, 0).getDate()
+                    const daysArr = []
+                    for (let d = 1; d <= daysCount; d++) {
+                        const dateObj = new Date(year, month, d)
+                        const dayOfWeekIndex = dateObj.getDay()
+                        const dayName = thaiDaysOfWeek[dayOfWeekIndex]
+                        const dateStr = `${year}-${String(month+1).padStart(2, '0')}-${String(d).padStart(2, '0')}`
+                        
+                        const isHoliday = monthlyDefaultHolidays.value.includes(d)
+
+                        daysArr.push({
+                            dateStr: dateStr,
+                            dateNum: String(d),
+                            dayName: dayName,
+                            isClosed: isHoliday,
+                            closeReason: isHoliday ? 'ระบบปิดบริการประจำเดือน' : '',
+                            riders: isHoliday ? [] : getDefaultRidersForDay(d)
+                        })
+                    }
+                    return daysArr
+                }
+
+                const getDefaultRidersForDay = (d) => {
+                    const allNames = riders.value.map(r => r.name)
+                    if (allNames.length === 0) return []
+                    const r1 = allNames[(d + 0) % allNames.length]
+                    const r2 = allNames[(d + 1) % allNames.length]
+                    const r3 = allNames[(d + 2) % allNames.length]
+                    return [r1, r2, r3]
+                }
+
+                // Load Data from Supabase or LocalStorage
+                const loadData = async () => {
+                    initSupabase()
+                    
+                    if (isSupabaseConnected.value && supabaseClient) {
+                        try {
+                            // Load Settings
+                            const { data: settingsData } = await supabaseClient.from('settings').select('*')
+                            if (settingsData && settingsData.length > 0) {
+                                settingsData.forEach(row => {
+                                    if (row.key === 'riders') riders.value = row.value
+                                    if (row.key === 'holidays') monthlyDefaultHolidays.value = row.value
+                                })
+                            }
+
+                            // Load Current Month Schedule
+                            const { data: scheduleData } = await supabaseClient.from('schedules').select('days').eq('month_key', monthKey.value).single()
+                            if (scheduleData && scheduleData.days) {
+                                monthlySchedules.value[monthKey.value] = scheduleData.days
+                            } else {
+                                const newDays = generateDaysForMonth(currentYear.value, currentMonth.value)
+                                monthlySchedules.value[monthKey.value] = newDays
+                                await supabaseClient.from('schedules').upsert({ month_key: monthKey.value, days: newDays, updated_at: new Date() })
+                            }
+                            return
+                        } catch (err) {
+                            console.warn('Supabase fetch fallback to local storage:', err)
+                        }
+                    }
+
+                    // Fallback to LocalStorage
+                    const savedRiders = localStorage.getItem('wolf_riders')
+                    if (savedRiders) { try { riders.value = JSON.parse(savedRiders) } catch(e){} }
+
+                    const savedHolidays = localStorage.getItem('wolf_monthly_holidays')
+                    if (savedHolidays) { try { monthlyDefaultHolidays.value = JSON.parse(savedHolidays) } catch(e){} }
+
+                    const savedAll = localStorage.getItem('wolf_monthly_schedules')
+                    if (savedAll) { try { monthlySchedules.value = JSON.parse(savedAll) } catch(e){} }
+
+                    if (!monthlySchedules.value[monthKey.value]) {
+                        monthlySchedules.value[monthKey.value] = generateDaysForMonth(currentYear.value, currentMonth.value)
+                        saveToLocal()
+                    }
+                }
+
+                const saveToLocal = () => {
+                    localStorage.setItem('wolf_monthly_schedules', JSON.stringify(monthlySchedules.value))
+                    localStorage.setItem('wolf_riders', JSON.stringify(riders.value))
+                    localStorage.setItem('wolf_monthly_holidays', JSON.stringify(monthlyDefaultHolidays.value))
+                }
+
+                const saveData = async () => {
+                    saveToLocal()
+                    if (isSupabaseConnected.value && supabaseClient) {
+                        isSyncing.value = true
+                        try {
+                            // Save Settings
+                            await supabaseClient.from('settings').upsert([
+                                { key: 'riders', value: riders.value, updated_at: new Date() },
+                                { key: 'holidays', value: monthlyDefaultHolidays.value, updated_at: new Date() }
+                            ])
+                            // Save Month Schedule
+                            await supabaseClient.from('schedules').upsert({
+                                month_key: monthKey.value,
+                                days: monthlySchedules.value[monthKey.value],
+                                updated_at: new Date()
+                            })
+                        } catch (err) {
+                            console.error('Supabase save error:', err)
+                        } finally {
+                            isSyncing.value = false
+                        }
+                    }
+                }
+
+                const syncDataToSupabase = async () => {
+                    if (!isSupabaseConnected.value) {
+                        showSupabaseModal.value = true
+                        return
+                    }
+                    await saveData()
+                    alert('ซิงค์ข้อมูลขึ้น Supabase Cloud สำเร็จเรียบร้อยแล้ว!')
+                }
+
+                onMounted(() => {
+                    loadData()
+                })
+
+                const onMonthOrYearChange = async () => {
+                    if (!monthlySchedules.value[monthKey.value]) {
+                        if (isSupabaseConnected.value && supabaseClient) {
+                            try {
+                                const { data } = await supabaseClient.from('schedules').select('days').eq('month_key', monthKey.value).single()
+                                if (data && data.days) {
+                                    monthlySchedules.value[monthKey.value] = data.days
+                                } else {
+                                    monthlySchedules.value[monthKey.value] = generateDaysForMonth(currentYear.value, currentMonth.value)
+                                    await saveData()
+                                }
+                            } catch(e) {
+                                monthlySchedules.value[monthKey.value] = generateDaysForMonth(currentYear.value, currentMonth.value)
+                            }
+                        } else {
+                            monthlySchedules.value[monthKey.value] = generateDaysForMonth(currentYear.value, currentMonth.value)
+                        }
+                    }
+                    selectedRiderFilter.value = null
+                }
+
+                const currentDays = computed(() => {
+                    return monthlySchedules.value[monthKey.value] || []
+                })
+
+                const filteredDays = computed(() => {
+                    let days = currentDays.value
+                    if (dateRangeFilter.value === '1-15') {
+                        days = days.filter(d => parseInt(d.dateNum) <= 15)
+                    } else if (dateRangeFilter.value === '16-end') {
+                        days = days.filter(d => parseInt(d.dateNum) >= 16)
+                    }
+                    if (selectedRiderFilter.value) {
+                        days = days.filter(d => !d.isClosed && d.riders.includes(selectedRiderFilter.value))
+                    }
+                    return days
+                })
+
+                const getRiderAvatar = (name) => {
+                    const r = riders.value.find(item => item.name === name)
+                    return r ? r.avatar : '👤'
+                }
+
+                const getRiderColor = (name) => {
+                    const colors = { 'พี่สาว': '#EC4899', 'เดียร์': '#F97316', 'กาย': '#3B82F6', 'เน': '#10B981', 'กาน': '#F59E0B', 'จักร': '#A855F7' }
+                    return colors[name] || '#64748B'
+                }
+
+                const getRiderHeart = (name) => {
+                    const r = riders.value.find(item => item.name === name)
+                    return r ? r.heart : ''
+                }
+
+                const getRiderShiftCount = (riderName) => {
+                    let count = 0
+                    currentDays.value.forEach(d => {
+                        if (!d.isClosed && d.riders.includes(riderName)) count++
+                    })
+                    return count
+                }
+
+                const isRiderWorkingOnDay = (day, riderName) => {
+                    if (!riderName) return false
+                    return !day.isClosed && day.riders.includes(riderName)
+                }
+
+                const toggleAdminMode = () => {
+                    if (adminMode.value) {
+                        adminMode.value = false
+                        selectedRiderFilter.value = null
+                    } else {
+                        showAdminPrompt.value = true
+                    }
+                }
+
+                const verifyAdmin = () => {
+                    if (adminPassword.value === '1234') {
+                        adminMode.value = true
+                        showAdminPrompt.value = false
+                        adminPassword.value = ''
+                    } else {
+                        alert('รหัสผ่านไม่ถูกต้อง! (ใช้ 1234)')
+                    }
+                }
+
+                // Modals & Actions
+                const showDayModal = ref(false)
+                const editingDay = ref({ dateStr: '', dateNum: '', dayName: '', isClosed: false, closeReason: '', riders: [] })
+                const openEditDayModal = (day) => {
+                    editingDay.value = JSON.parse(JSON.stringify(day))
+                    showDayModal.value = true
+                }
+                const saveEditingDay = async () => {
+                    const idx = currentDays.value.findIndex(d => d.dateStr === editingDay.value.dateStr)
+                    if (idx !== -1) {
+                        monthlySchedules.value[monthKey.value][idx] = JSON.parse(JSON.stringify(editingDay.value))
+                        await saveData()
+                    }
+                    showDayModal.value = false
+                }
+
+                const showRiderModal = ref(false)
+                const openRiderManager = () => { showRiderModal.value = true }
+                const addNewRider = () => {
+                    riders.value.push({
+                        id: Date.now(),
+                        name: 'ไรเดอร์ใหม่',
+                        avatar: '🛵💨',
+                        ringColor: 'ring-orange-400',
+                        bgBadgeClass: 'bg-orange-100 text-orange-700 border-orange-300',
+                        heart: '🧡'
+                    })
+                }
+                const removeRider = (index) => {
+                    if (riders.value.length <= 1) {
+                        alert('ต้องมีไรเดอร์อย่างน้อย 1 คนในระบบ')
+                        return
+                    }
+                    riders.value.splice(index, 1)
+                }
+                const saveRidersList = async () => {
+                    await saveData()
+                    showRiderModal.value = false
+                }
+
+                const showHolidayModal = ref(false)
+                const newHolidayDay = ref('')
+                const openHolidayManager = () => { showHolidayModal.value = true }
+                const addMonthlyHoliday = () => {
+                    const d = parseInt(newHolidayDay.value)
+                    if (d >= 1 && d <= 31 && !monthlyDefaultHolidays.value.includes(d)) {
+                        monthlyDefaultHolidays.value.push(d)
+                        monthlyDefaultHolidays.value.sort((a,b) => a - b)
+                        newHolidayDay.value = ''
+                    }
+                }
+                const removeMonthlyHoliday = (idx) => { monthlyDefaultHolidays.value.splice(idx, 1) }
+                const saveMonthlyHolidaysConfig = async () => {
+                    monthlySchedules.value[monthKey.value] = generateDaysForMonth(currentYear.value, currentMonth.value)
+                    await saveData()
+                    showHolidayModal.value = false
+                }
+
+                const showEmergencyModal = ref(false)
+                const emergencyDateStr = ref('')
+                const emergencyReason = ref('ระบบปิดบริการฉุกเฉิน')
+                const openEmergencyModal = () => {
+                    const days = currentDays.value
+                    if (days.length > 0) emergencyDateStr.value = days[0].dateStr
+                    showEmergencyModal.value = true
+                }
+                const applyEmergencyClosure = async (isClosed) => {
+                    const idx = currentDays.value.findIndex(d => d.dateStr === emergencyDateStr.value)
+                    if (idx !== -1) {
+                        monthlySchedules.value[monthKey.value][idx].isClosed = isClosed
+                        monthlySchedules.value[monthKey.value][idx].closeReason = isClosed ? emergencyReason.value : ''
+                        if (isClosed) monthlySchedules.value[monthKey.value][idx].riders = []
+                        await saveData()
+                        showEmergencyModal.value = false
+                        alert('อัปเดตสถานะฉุกเฉินเรียบร้อยแล้ว')
+                    }
+                }
+
+                const openSupabaseConfig = () => { showSupabaseModal.value = true }
+                const testAndSaveSupabaseConfig = async () => {
+                    localStorage.setItem('supabase_url', supabaseConfig.value.url)
+                    localStorage.setItem('supabase_anon_key', supabaseConfig.value.anonKey)
+                    initSupabase()
+                    if (isSupabaseConnected.value) {
+                        showSupabaseModal.value = false
+                        await loadData()
+                        alert('เชื่อมต่อ Supabase สำเร็จและโหลดข้อมูลเรียบร้อย!')
+                    } else {
+                        alert('เชื่อมต่อไม่สำเร็จ กรุณาตรวจสอบ URL และ Anon Key อีกครั้ง')
+                    }
+                }
+
+                const exportAsImage = async () => {
+                    const element = document.getElementById('schedule-export-area')
+                    if (!element) return
+                    isExporting.value = true
+                    try {
+                        const canvas = await html2canvas(element, { scale: 2, useCORS: true, backgroundColor: '#FEF3C7' })
+                        const image = canvas.toDataURL('image/png')
+                        const link = document.createElement('a')
+                        link.href = image
+                        link.download = `WolfDelivery-Schedule-${thaiMonths[currentMonth.value]}-${currentYear.value + 543}.png`
+                        link.click()
+                    } catch (err) {
+                        console.error(err)
+                        alert('ไม่สามารถสร้างรูปภาพได้ กรุณาลองใหม่อีกครั้ง')
+                    } finally {
+                        isExporting.value = false
+                    }
+                }
+
+                const printSchedule = () => { window.print() }
+
+                return {
+                    thaiMonths, currentMonth, currentYear, availableYears, dateRangeFilter,
+                    riders, adminMode, showAdminPrompt, adminPassword, selectedRiderFilter, isExporting, isSyncing,
+                    currentDays, filteredDays, showDayModal, editingDay, showRiderModal,
+                    showHolidayModal, newHolidayDay, monthlyDefaultHolidays,
+                    showEmergencyModal, emergencyDateStr, emergencyReason,
+                    showSupabaseModal, isSupabaseConnected, supabaseConfig,
+                    onMonthOrYearChange, getRiderAvatar, getRiderColor, getRiderHeart, getRiderShiftCount,
+                    isRiderWorkingOnDay, toggleAdminMode, verifyAdmin, openEditDayModal, saveEditingDay,
+                    openHolidayManager, addMonthlyHoliday, removeMonthlyHoliday, saveMonthlyHolidaysConfig,
+                    openEmergencyModal, applyEmergencyClosure,
+                    openRiderManager, addNewRider, removeRider, saveRidersList,
+                    openSupabaseConfig, testAndSaveSupabaseConfig, syncDataToSupabase,
+                    exportAsImage, printSchedule
+                }
+            }
+        }).mount('#app')
+    </script>
+</body>
+</html>
