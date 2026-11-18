@@ -208,8 +208,13 @@
                     </select>
                 </div>
 
-                <!-- 3. ปุ่มบันทึกรูป PNG, ปุ่มสลับหน้าแดชบอร์ดสถิติ และ ปลดล็อกแอดมิน / โหมดแอดมิน (ล็อก) -->
-                <div class="flex items-center gap-2">
+                <!-- 3. ปุ่มวันนี้ใครวิ่ง, บันทึกรูป PNG, สลับหน้าแดชบอร์ดสถิติ และ ปลดล็อกแอดมิน -->
+                <div class="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                    <button @click="openTodaySummary"
+                        class="bg-gradient-to-r from-yellow-300 via-amber-400 to-orange-400 hover:from-yellow-200 hover:to-orange-300 text-slate-950 px-3 py-1.5 rounded-xl font-extrabold text-xs sm:text-sm shadow-md flex items-center gap-1.5 transition-all cursor-pointer border border-white/80">
+                        <i class="fa-solid fa-bolt text-orange-700"></i>
+                        <span>วันนี้ใครวิ่ง</span>
+                    </button>
                     <button v-if="activeView === 'poster'" @click="exportPosterPng" :disabled="isExporting"
                         class="bg-emerald-500 hover:bg-emerald-400 disabled:opacity-60 text-slate-950 px-3 py-1.5 rounded-xl font-extrabold text-xs sm:text-sm shadow flex items-center gap-1.5 transition-all cursor-pointer">
                         <i :class="isExporting ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-image'"></i>
@@ -510,6 +515,7 @@
                 <div class="p-3 sm:p-6">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-3.5 sm:gap-4">
                         <div v-for="day in displayedDays" :key="day.dateStr"
+                            :id="isToday(day.dateNum) ? 'today-shift-card' : null"
                             @click="adminMode ? openEditDayModal(day) : null"
                             class="rounded-2xl overflow-hidden card-shadow flex items-stretch min-h-[104px] transition-all duration-200 relative group"
                             :class="[
@@ -629,6 +635,136 @@
         </main>
 
         <!-- ==================== MODALS ==================== -->
+        <!-- 0. Modal วันนี้ใครวิ่งบ้าง (สรุปเวรวันนี้ กลางวัน + กลางคืน) -->
+        <div v-if="showTodayModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-sm">
+            <div class="bg-white text-slate-800 rounded-3xl shadow-2xl border-4 border-amber-400 w-full max-w-md overflow-hidden animate-slideUp">
+                <div class="bg-[#0F172A] text-white px-5 py-4 flex items-center justify-between border-b-2 border-amber-400">
+                    <div>
+                        <div class="inline-flex items-center gap-1 bg-amber-400 text-slate-950 text-[11px] font-black px-2.5 py-0.5 rounded-full mb-1">
+                            <span>⚡</span>
+                            <span>อัปเดตเวรวันนี้</span>
+                        </div>
+                        <h3 class="font-extrabold text-base sm:text-lg text-white">
+                            วัน{{ todayShiftSummary.dayName }}ที่ {{ todayShiftSummary.dateNum }} {{ todayShiftSummary.monthName }} {{ todayShiftSummary.beYear }}
+                        </h3>
+                    </div>
+                    <button @click="showTodayModal = false" class="text-slate-300 hover:text-white text-2xl leading-none cursor-pointer">&times;</button>
+                </div>
+
+                <div class="p-5 space-y-4 max-h-[75vh] overflow-y-auto">
+                    <!-- กะกลางวัน -->
+                    <div class="rounded-2xl border-2 border-amber-300 bg-gradient-to-br from-amber-50 to-orange-50 p-4 shadow-sm">
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="font-extrabold text-sm sm:text-base text-slate-900 flex items-center gap-1.5">
+                                <span class="text-lg">☀️</span> กะกลางวัน
+                            </span>
+                            <span v-if="todayShiftSummary.dayShift.isClosed" class="text-xs font-extrabold bg-red-600 text-white px-2.5 py-0.5 rounded-full">
+                                ปิดระบบ
+                            </span>
+                            <span v-else class="text-xs font-bold bg-amber-200/80 text-amber-950 px-2.5 py-0.5 rounded-full">
+                                วิ่ง {{ todayShiftSummary.dayShift.riders.length }} คน
+                            </span>
+                        </div>
+
+                        <div v-if="todayShiftSummary.dayShift.isClosed" class="bg-red-600 text-white rounded-xl p-3 text-center font-bold text-sm">
+                            🏠 ปิดระบบ ({{ todayShiftSummary.dayShift.closeReason || 'วันหยุดประจำเดือน' }})
+                        </div>
+                        <div v-else-if="todayShiftSummary.dayShift.riders.length > 0" class="flex flex-wrap items-center justify-around gap-3 py-1">
+                            <div v-for="rName in todayShiftSummary.dayShift.riders" :key="'today-day-' + rName" class="flex flex-col items-center">
+                                <div class="w-14 h-14 rounded-full bg-white border-2 border-slate-900 overflow-hidden shadow-md mb-1">
+                                    <svg viewBox="0 0 64 64" class="w-full h-full">
+                                        <path d="M12 64C12 52 20 48 32 48C44 48 52 52 52 64H12Z" :fill="getRiderInfo(rName).color" stroke="#0F172A" stroke-width="3"/>
+                                        <path d="M26 48L32 56L38 48" fill="#FFFFFF" stroke="#0F172A" stroke-width="2"/>
+                                        <path v-if="getRiderInfo(rName).hairStyle === 'long'" d="M14 28C12 40 14 48 18 50H46C50 48 52 40 50 28Z" fill="#1E293B" stroke="#0F172A" stroke-width="2.5"/>
+                                        <path d="M14 30C14 16 22 8 32 8C42 8 50 16 50 30C50 38 46 44 40 46H24C18 44 14 38 14 30Z" :fill="getRiderInfo(rName).color" stroke="#0F172A" stroke-width="3"/>
+                                        <path d="M17 24Q32 19 47 24" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" opacity="0.85"/>
+                                        <path d="M20 27C20 23 25 22 32 22C39 22 44 23 44 27C44 37 39 44 32 44C25 44 20 37 20 27Z" fill="#FDE6D8" stroke="#0F172A" stroke-width="2.5"/>
+                                        <path d="M20 27C22 22 28 22 32 25C36 22 42 22 44 27C42 21 37 20 32 20C27 20 22 21 20 27Z" fill="#1E293B"/>
+                                        <circle cx="27" cy="31" r="2" fill="#0F172A"/>
+                                        <circle cx="37" cy="31" r="2" fill="#0F172A"/>
+                                        <g v-if="getRiderInfo(rName).hasGlasses">
+                                            <rect x="22" y="27.5" width="9" height="7" rx="1.5" fill="none" stroke="#0F172A" stroke-width="1.8"/>
+                                            <rect x="33" y="27.5" width="9" height="7" rx="1.5" fill="none" stroke="#0F172A" stroke-width="1.8"/>
+                                            <line x1="31" y1="30.5" x2="33" y2="30.5" stroke="#0F172A" stroke-width="1.8"/>
+                                        </g>
+                                        <path d="M29 37Q32 40 35 37" stroke="#0F172A" stroke-width="2" stroke-linecap="round" fill="none"/>
+                                    </svg>
+                                </div>
+                                <div class="font-extrabold text-sm text-slate-900 flex items-center gap-0.5">
+                                    <span>{{ rName }}</span>
+                                    <span>{{ getRiderInfo(rName).heart }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div v-else class="text-center text-xs font-bold text-slate-500 py-2">
+                            ยังไม่มีไรเดอร์ลงเวรวันนี้
+                        </div>
+                    </div>
+
+                    <!-- กะกลางคืน -->
+                    <div class="rounded-2xl border-2 border-indigo-400 bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 text-white p-4 shadow-sm">
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="font-extrabold text-sm sm:text-base text-amber-300 flex items-center gap-1.5">
+                                <span class="text-lg">🌙</span> กะกลางคืน
+                            </span>
+                            <span v-if="todayShiftSummary.nightShift.isClosed" class="text-xs font-extrabold bg-red-600 text-white px-2.5 py-0.5 rounded-full">
+                                ปิดระบบ
+                            </span>
+                            <span v-else class="text-xs font-bold bg-indigo-800 text-indigo-200 px-2.5 py-0.5 rounded-full border border-indigo-600">
+                                วิ่ง {{ todayShiftSummary.nightShift.riders.length }} คน
+                            </span>
+                        </div>
+
+                        <div v-if="todayShiftSummary.nightShift.isClosed" class="bg-red-600 text-white rounded-xl p-3 text-center font-bold text-sm">
+                            🏠 ปิดระบบ ({{ todayShiftSummary.nightShift.closeReason || 'วันหยุดประจำเดือน' }})
+                        </div>
+                        <div v-else-if="todayShiftSummary.nightShift.riders.length > 0" class="flex flex-wrap items-center justify-around gap-3 py-1">
+                            <div v-for="rName in todayShiftSummary.nightShift.riders" :key="'today-night-' + rName" class="flex flex-col items-center">
+                                <div class="w-14 h-14 rounded-full bg-white border-2 border-amber-300 overflow-hidden shadow-md mb-1">
+                                    <svg viewBox="0 0 64 64" class="w-full h-full">
+                                        <path d="M12 64C12 52 20 48 32 48C44 48 52 52 52 64H12Z" :fill="getRiderInfo(rName).color" stroke="#0F172A" stroke-width="3"/>
+                                        <path d="M26 48L32 56L38 48" fill="#FFFFFF" stroke="#0F172A" stroke-width="2"/>
+                                        <path v-if="getRiderInfo(rName).hairStyle === 'long'" d="M14 28C12 40 14 48 18 50H46C50 48 52 40 50 28Z" fill="#1E293B" stroke="#0F172A" stroke-width="2.5"/>
+                                        <path d="M14 30C14 16 22 8 32 8C42 8 50 16 50 30C50 38 46 44 40 46H24C18 44 14 38 14 30Z" :fill="getRiderInfo(rName).color" stroke="#0F172A" stroke-width="3"/>
+                                        <path d="M17 24Q32 19 47 24" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" opacity="0.85"/>
+                                        <path d="M20 27C20 23 25 22 32 22C39 22 44 23 44 27C44 37 39 44 32 44C25 44 20 37 20 27Z" fill="#FDE6D8" stroke="#0F172A" stroke-width="2.5"/>
+                                        <path d="M20 27C22 22 28 22 32 25C36 22 42 22 44 27C42 21 37 20 32 20C27 20 22 21 20 27Z" fill="#1E293B"/>
+                                        <circle cx="27" cy="31" r="2" fill="#0F172A"/>
+                                        <circle cx="37" cy="31" r="2" fill="#0F172A"/>
+                                        <g v-if="getRiderInfo(rName).hasGlasses">
+                                            <rect x="22" y="27.5" width="9" height="7" rx="1.5" fill="none" stroke="#0F172A" stroke-width="1.8"/>
+                                            <rect x="33" y="27.5" width="9" height="7" rx="1.5" fill="none" stroke="#0F172A" stroke-width="1.8"/>
+                                            <line x1="31" y1="30.5" x2="33" y2="30.5" stroke="#0F172A" stroke-width="1.8"/>
+                                        </g>
+                                        <path d="M29 37Q32 40 35 37" stroke="#0F172A" stroke-width="2" stroke-linecap="round" fill="none"/>
+                                    </svg>
+                                </div>
+                                <div class="font-extrabold text-sm text-white flex items-center gap-0.5">
+                                    <span>{{ rName }}</span>
+                                    <span>{{ getRiderInfo(rName).heart }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div v-else class="text-center text-xs font-bold text-slate-400 py-2">
+                            ยังไม่มีไรเดอร์ลงเวรคืนนี้
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-slate-100 px-5 py-3.5 flex items-center justify-between gap-2 border-t border-slate-200">
+                    <button @click="jumpToTodayCard"
+                        class="flex-1 bg-orange-600 hover:bg-orange-500 text-white py-2.5 rounded-xl font-extrabold text-xs sm:text-sm shadow flex items-center justify-center gap-1.5 cursor-pointer">
+                        <i class="fa-solid fa-location-crosshairs"></i>
+                        <span>เลื่อนไปดูการ์ดวันนี้ในตาราง</span>
+                    </button>
+                    <button @click="showTodayModal = false"
+                        class="px-4 py-2.5 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold text-xs sm:text-sm cursor-pointer">
+                        ปิด
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <!-- 1. Modal ปลดล็อกแอดมิน -->
         <div v-if="showAdminLoginModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-sm">
             <div class="bg-white text-slate-800 rounded-3xl shadow-2xl border-4 border-amber-400 w-full max-w-sm p-6 text-center animate-slideUp">
@@ -1062,6 +1198,7 @@ end $$;`
                 const isVerifyingPin = ref(false)
 
                 // Modals state refs
+                const showTodayModal = ref(false)
                 const showDayModal = ref(false)
                 const showRiderModal = ref(false)
                 const showHolidayModal = ref(false)
@@ -1071,7 +1208,7 @@ end $$;`
 
                 // เช็คว่ากำลังเปิดหน้าต่างแก้ไขอยู่หรือไม่
                 const isAnyModalOpen = computed(() => {
-                    return showAdminLoginModal.value || showDayModal.value || showRiderModal.value ||
+                    return showTodayModal.value || showAdminLoginModal.value || showDayModal.value || showRiderModal.value ||
                            showHolidayModal.value || showEmergencyModal.value || showBackupModal.value ||
                            showChangePasswordModal.value || showSqlModal.value
                 })
@@ -1131,6 +1268,73 @@ end $$;`
                     return todayDate.getDate() === Number(dayNum) &&
                            todayDate.getMonth() === currentMonth.value &&
                            todayDate.getFullYear() === currentYear.value
+                }
+
+                // สรุปข้อมูลวันนี้ใครวิ่งบ้าง (ทั้งกะกลางวันและกะกลางคืน)
+                const todayShiftSummary = computed(() => {
+                    const today = new Date()
+                    const tYear = Math.min(2032, Math.max(2025, today.getFullYear()))
+                    const tMonth = today.getMonth()
+                    const tDate = today.getDate()
+                    const tDayName = thaiDaysOfWeek[today.getDay()]
+                    const baseKey = `${tYear}-${String(tMonth + 1).padStart(2, '0')}`
+                    const nightKey = `${baseKey}-night`
+
+                    const dayList = monthlySchedules.value[baseKey] || buildDefaultDaysForMonth(tYear, tMonth, 'day')
+                    const nightList = monthlySchedules.value[nightKey] || buildDefaultDaysForMonth(tYear, tMonth, 'night')
+
+                    const foundDay = dayList.find(d => Number(d.dateNum) === tDate) || { isClosed: false, closeReason: '', riders: [] }
+                    const foundNight = nightList.find(d => Number(d.dateNum) === tDate) || { isClosed: false, closeReason: '', riders: [] }
+
+                    return {
+                        dateNum: tDate,
+                        dayName: tDayName,
+                        monthName: thaiMonths[tMonth],
+                        beYear: tYear + 543,
+                        dayShift: foundDay,
+                        nightShift: foundNight
+                    }
+                })
+
+                const openTodaySummary = async () => {
+                    const today = new Date()
+                    const tYear = Math.min(2032, Math.max(2025, today.getFullYear()))
+                    const tMonth = today.getMonth()
+                    const baseKey = `${tYear}-${String(tMonth + 1).padStart(2, '0')}`
+                    const nightKey = `${baseKey}-night`
+
+                    if (!monthlySchedules.value[baseKey]) {
+                        monthlySchedules.value[baseKey] = buildDefaultDaysForMonth(tYear, tMonth, 'day')
+                    }
+                    if (!monthlySchedules.value[nightKey]) {
+                        monthlySchedules.value[nightKey] = buildDefaultDaysForMonth(tYear, tMonth, 'night')
+                    }
+                    showTodayModal.value = true
+                    if (supabaseClient) {
+                        try {
+                            await fetchScheduleFromSupabase(baseKey, tYear, tMonth)
+                            await fetchScheduleFromSupabase(nightKey, tYear, tMonth)
+                        } catch (e) {}
+                    }
+                }
+
+                const jumpToTodayCard = async () => {
+                    const today = new Date()
+                    const tYear = Math.min(2032, Math.max(2025, today.getFullYear()))
+                    const tMonth = today.getMonth()
+                    currentMonth.value = tMonth
+                    currentYear.value = tYear
+                    periodFilter.value = 'all'
+                    selectedRiderFilter.value = null
+                    activeView.value = 'poster'
+                    showTodayModal.value = false
+                    await onMonthOrYearChange()
+                    setTimeout(() => {
+                        const el = document.getElementById('today-shift-card')
+                        if (el) {
+                            el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                        }
+                    }, 180)
                 }
 
                 // ตรวจสอบ Error กรณียังไม่ได้รัน SQL สร้างตาราง
@@ -2003,7 +2207,8 @@ end $$;`
                     riders, monthlyHolidays, dbStatus, showSqlModal, sqlSetupScript,
                     adminMode, showAdminLoginModal, adminPinInput, adminLoginError, isVerifyingPin,
                     toast, currentMonthDays, periodFilteredDays, displayedDays, posterDateRangeLabel,
-                    isToday, getRiderShiftStats, autoBalanceShifts, copyPreviousMonthSchedule, onRiderNameInputChanged,
+                    isToday, showTodayModal, todayShiftSummary, openTodaySummary, jumpToTodayCard,
+                    getRiderShiftStats, autoBalanceShifts, copyPreviousMonthSchedule, onRiderNameInputChanged,
                     onMonthOrYearChange, retrySupabaseSync, getRiderInfo, getRiderShiftCount,
                     openAdminModal, verifyAdminPassword, lockAdminScreen,
                     showChangePasswordModal, newAdminPinInput, passwordChangeError, isSavingPassword,
