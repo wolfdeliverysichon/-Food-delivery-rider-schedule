@@ -29,7 +29,7 @@
         }
     </script>
     <style>
-        /* ซ่อน Template ก่อน Vue 3 Mount เสร็จสมบูรณ์ เพื่อไม่ให้เห็น {{ ... }} */
+        /* ซ่อน Template ก่อน Vue 3 Mount เสร็จสมบูรณ์ */
         [v-cloak] {
             display: none !important;
         }
@@ -83,7 +83,6 @@
 </head>
 <body class="min-h-screen text-slate-900 antialiased selection:bg-orange-500 selection:text-white">
     <div id="app" v-cloak class="flex flex-col min-h-screen">
-
         <!-- Toast Notification -->
         <div v-if="toast.show" class="fixed bottom-5 right-5 z-[100] max-w-sm animate-slideUp no-print">
             <div class="px-4 py-3 rounded-2xl shadow-2xl border-2 flex items-center gap-3 text-sm font-bold"
@@ -120,14 +119,12 @@
                             <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
                             Auto-Sync อัตโนมัติ
                         </span>
-
                         <!-- สถานะกำลังซิงค์ -->
                         <span v-else-if="dbStatus === 'connecting'"
                             class="inline-flex items-center gap-1.5 text-[11px] px-2.5 py-0.5 rounded-full font-bold bg-slate-800 text-slate-300 border border-slate-600">
                             <i class="fa-solid fa-spinner fa-spin text-[10px]"></i>
                             กำลังซิงค์...
                         </span>
-
                         <!-- ปุ่มแจ้งเตือนเมื่อยังไม่ได้รันคำสั่งสร้างตาราง SQL ใน Supabase -->
                         <button v-else @click="showSqlModal = true"
                             class="inline-flex items-center gap-1 text-[11px] px-2.5 py-0.5 rounded-full font-extrabold bg-amber-400 hover:bg-amber-300 text-slate-950 shadow animate-pulse cursor-pointer">
@@ -142,12 +139,10 @@
                         class="bg-slate-800 text-amber-300 border border-slate-600 rounded-xl px-2.5 py-1.5 text-xs sm:text-sm font-bold outline-none focus:border-amber-400 cursor-pointer">
                         <option v-for="(m, idx) in thaiMonths" :value="idx" :key="idx">{{ m }}</option>
                     </select>
-
                     <select v-model="currentYear" @change="onMonthOrYearChange"
                         class="bg-slate-800 text-amber-300 border border-slate-600 rounded-xl px-2.5 py-1.5 text-xs sm:text-sm font-bold outline-none focus:border-amber-400 cursor-pointer">
                         <option v-for="y in availableYears" :value="y" :key="y">พ.ศ. {{ y + 543 }}</option>
                     </select>
-
                     <select v-model="periodFilter"
                         class="bg-slate-800 text-white border border-slate-600 rounded-xl px-2.5 py-1.5 text-xs sm:text-sm font-semibold outline-none focus:border-amber-400 cursor-pointer">
                         <option value="all">ทั้งเดือน</option>
@@ -163,13 +158,11 @@
                         <i :class="isExporting ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-image'"></i>
                         <span>{{ isExporting ? 'กำลังสร้างรูป...' : 'บันทึกรูป PNG' }}</span>
                     </button>
-
                     <button v-if="!adminMode" @click="openAdminModal"
                         class="bg-amber-400 hover:bg-amber-300 text-slate-950 px-3 py-1.5 rounded-xl font-extrabold text-xs sm:text-sm shadow flex items-center gap-1.5 transition-all cursor-pointer">
                         <i class="fa-solid fa-lock"></i>
                         <span>ปลดล็อกแอดมิน</span>
                     </button>
-
                     <button v-else @click="lockAdminScreen"
                         class="bg-rose-600 hover:bg-rose-500 text-white px-3 py-1.5 rounded-xl font-extrabold text-xs sm:text-sm shadow flex items-center gap-1.5 transition-all cursor-pointer">
                         <i class="fa-solid fa-shield-halved"></i>
@@ -180,27 +173,42 @@
 
             <!-- ==================== ADMIN TOOLBAR (แสดงเมื่อปลดล็อกแอดมินแล้ว) ==================== -->
             <div v-if="adminMode" class="bg-slate-800 border-t border-slate-700 px-3 py-2.5">
-                <div class="max-w-5xl mx-auto flex flex-wrap items-center justify-between gap-2">
+                <div class="max-w-5xl mx-auto flex flex-wrap items-center justify-between gap-2.5">
                     <div class="flex items-center gap-1.5 text-xs font-bold text-emerald-400">
                         <i class="fa-solid fa-pen-to-square"></i>
-                        <span>คลิกที่การ์ดวันที่ด้านล่างเพื่อจัดเวรหรือปิดระบบได้ทันที</span>
+                        <span>จัดเวร แดชบอร์ดสถิติ หรือสุ่มเกลี่ยตารางทั้งเดือนแบบยุติธรรมได้จากแถบเครื่องมือนี้</span>
                     </div>
                     <div class="flex flex-wrap items-center gap-1.5">
+                        <button @click="autoBalanceShifts"
+                            class="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-md cursor-pointer"
+                            title="สุ่มเกลี่ยจำนวนเวรให้ทุกคนเท่ากันอย่างยุติธรรม">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i> สุ่มเกลี่ยเวรอัตโนมัติ
+                        </button>
+                        <button @click="copyPreviousMonthSchedule"
+                            class="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-md cursor-pointer"
+                            title="คัดลอกรูปแบบการจัดเวรของเดือนก่อนหน้ามาใช้งาน">
+                            <i class="fa-solid fa-copy"></i> คัดลอกตารางเดือนก่อน
+                        </button>
                         <button @click="openRiderManager"
                             class="bg-blue-600 hover:bg-blue-500 text-white px-2.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow cursor-pointer">
                             <i class="fa-solid fa-helmet-safety"></i> จัดการไรเดอร์
                         </button>
                         <button @click="openHolidayManager"
                             class="bg-purple-600 hover:bg-purple-500 text-white px-2.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow cursor-pointer">
-                            <i class="fa-solid fa-calendar-xmark"></i> วันหยุดประจำเดือน ({{ monthlyHolidays.join(', ') || 'ไม่มี' }})
+                            <i class="fa-solid fa-calendar-xmark"></i> วันหยุด ({{ monthlyHolidays.join(', ') || 'ไม่มี' }})
                         </button>
                         <button @click="openEmergencyModal"
-                            class="bg-red-600 hover:bg-red-500 text-white px-2.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow cursor-pointer">
+                            class="bg-red-600 hover:bg-red-50 text-white px-2.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow cursor-pointer">
                             <i class="fa-solid fa-triangle-exclamation"></i> ปิดระบบฉุกเฉิน
+                        </button>
+                        <button @click="openBackupModal"
+                            class="bg-slate-700 hover:bg-slate-600 text-amber-300 px-2.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow cursor-pointer"
+                            title="สำรองข้อมูลเป็นไฟล์ JSON หรือกู้คืนตาราง">
+                            <i class="fa-solid fa-file-export"></i> สำรอง/กู้คืนข้อมูล
                         </button>
                         <button @click="openChangePasswordModal"
                             class="bg-amber-500 hover:bg-amber-400 text-slate-950 px-2.5 py-1.5 rounded-xl text-xs font-extrabold flex items-center gap-1.5 shadow cursor-pointer">
-                            <i class="fa-solid fa-key"></i> เปลี่ยนรหัสแอดมิน
+                            <i class="fa-solid fa-key"></i> เปลี่ยนรหัส
                         </button>
                         <button @click="showSqlModal = true"
                             class="bg-teal-600 hover:bg-teal-500 text-white px-2.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow cursor-pointer">
@@ -211,8 +219,41 @@
             </div>
         </nav>
 
-        <!-- ==================== INDIVIDUAL RIDER FILTER BAR ==================== -->
+        <!-- ==================== RIDER SHIFT STATISTICS DASHBOARD ==================== -->
         <div class="max-w-4xl mx-auto w-full px-3 pt-4 no-print">
+            <div class="bg-slate-900 text-white rounded-2xl p-4 shadow-lg border-2 border-amber-400">
+                <div class="flex items-center justify-between mb-3 border-b border-slate-700 pb-2">
+                    <h2 class="text-sm sm:text-base font-extrabold text-amber-300 flex items-center gap-2">
+                        <i class="fa-solid fa-chart-simple"></i>
+                        <span>แดชบอร์ดสรุปสถิติจำนวนเวรวิ่งงาน ({{ periodFilter === 'all' ? 'ทั้งเดือน' : (periodFilter === 'first-half' ? 'ครึ่งเดือนแรก' : 'ครึ่งเดือนหลัง') }})</span>
+                    </h2>
+                    <span class="text-xs bg-slate-800 text-slate-400 px-2 py-0.5 rounded-full font-bold">
+                        คัดแยก วันธรรมดา vs วันเสาร์-อาทิตย์ เพื่อความเท่าเทียม
+                    </span>
+                </div>
+                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
+                    <div v-for="rider in riders" :key="rider.id"
+                        @click="selectedRiderFilter = selectedRiderFilter === rider.name ? null : rider.name"
+                        class="bg-slate-800 hover:bg-slate-750 p-2.5 rounded-xl border transition-all cursor-pointer flex flex-col items-center justify-center text-center"
+                        :class="selectedRiderFilter === rider.name ? 'border-orange-500 ring-2 ring-orange-500/50 scale-105 bg-slate-850' : 'border-slate-700'">
+                        <div class="flex items-center gap-1 mb-1">
+                            <span class="font-extrabold text-xs sm:text-sm">{{ rider.name }}</span>
+                            <span class="text-xs leading-none">{{ rider.heart }}</span>
+                        </div>
+                        <div class="text-2xl font-black text-amber-300 my-0.5">
+                            {{ getRiderShiftStats(rider.name).total }} <span class="text-xs font-bold text-slate-400">เวร</span>
+                        </div>
+                        <div class="text-[10px] text-slate-400 font-semibold space-y-0.5">
+                            <div>จ-ศ: <span class="text-emerald-400 font-bold">{{ getRiderShiftStats(rider.name).weekday }}</span> วัน</div>
+                            <div>ส-อา: <span class="text-orange-400 font-bold">{{ getRiderShiftStats(rider.name).weekend }}</span> วัน</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== INDIVIDUAL RIDER FILTER BAR ==================== -->
+        <div class="max-w-4xl mx-auto w-full px-3 pt-3 no-print">
             <div class="bg-white/95 rounded-2xl px-4 py-2.5 shadow-sm border-2 border-amber-300 flex flex-wrap items-center justify-between gap-2">
                 <div class="flex items-center gap-2 text-xs sm:text-sm font-extrabold text-slate-800">
                     <i class="fa-solid fa-filter text-orange-500"></i>
@@ -339,7 +380,6 @@
                                 <circle cx="94" cy="92" r="6" fill="#CBD5E1" stroke="#0F172A" stroke-width="2"/>
                             </svg>
                         </div>
-
                     </div>
 
                     <!-- ถนนลาดยางสีเทาเข้มพร้อมเส้นประสีขาว -->
@@ -394,12 +434,20 @@
                             class="rounded-2xl overflow-hidden card-shadow flex items-stretch min-h-[104px] transition-all duration-200 relative group"
                             :class="[
                                 adminMode ? 'cursor-pointer hover:ring-4 hover:ring-blue-500 hover:scale-[1.01]' : '',
-                                selectedRiderFilter && !day.isClosed && day.riders.includes(selectedRiderFilter) ? 'ring-4 ring-emerald-500' : ''
+                                selectedRiderFilter && !day.isClosed && day.riders.includes(selectedRiderFilter) ? 'ring-4 ring-emerald-500' : '',
+                                isToday(day.dateNum) ? 'ring-4 ring-amber-500 shadow-amber-200 shadow-lg' : ''
                             ]">
                             
                             <!-- กล่องซ้าย: วันธรรมดา = น้ำเงินเข้ม (#0F172A) | วันเสาร์-อาทิตย์ = ส้มสด (#F97316) -->
-                            <div class="w-28 sm:w-32 flex-shrink-0 flex flex-col items-center justify-center p-2.5 text-white select-none"
+                            <div class="w-28 sm:w-32 flex-shrink-0 flex flex-col items-center justify-center p-2.5 text-white select-none relative"
                                 :class="day.isWeekend ? 'bg-[#F97316]' : 'bg-[#0F172A]'">
+                                
+                                <!-- Today Badge ป้ายกำกับวันนี้เรืองแสง -->
+                                <span v-if="isToday(day.dateNum)"
+                                    class="absolute -top-1 -left-1 bg-yellow-400 text-slate-950 text-[10px] px-2 py-0.5 rounded-br-lg font-black uppercase tracking-wider shadow">
+                                    วันนี้
+                                </span>
+
                                 <span class="font-display font-black text-4xl sm:text-[42px] leading-none tracking-tight">
                                     {{ day.dateNum }}
                                 </span>
@@ -478,12 +526,10 @@
                                             </svg>
                                         </div>
                                     </div>
-
                                     <div v-if="day.riders.length === 0" class="text-white/95 text-xs sm:text-sm font-bold text-center py-2 text-outline-dark">
                                         ยังไม่มีไรเดอร์ลงเวร
                                     </div>
                                 </div>
-
                             </div>
                         </div>
                     </div>
@@ -497,12 +543,10 @@
                         </button>
                     </div>
                 </div>
-
             </div>
         </main>
 
         <!-- ==================== MODALS ==================== -->
-
         <!-- 1. Modal ปลดล็อกแอดมิน -->
         <div v-if="showAdminLoginModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-sm">
             <div class="bg-white text-slate-800 rounded-3xl shadow-2xl border-4 border-amber-400 w-full max-w-sm p-6 text-center animate-slideUp">
@@ -514,13 +558,11 @@
                     กรอกรหัสผ่านแอดมินเพื่อจัดการตารางเวร<br>
                     <span class="text-slate-500">(รหัสผ่านเริ่มต้นคือ <strong class="text-orange-600 font-mono">1234</strong>)</span>
                 </p>
-
                 <input type="password" v-model="adminPinInput" @keyup.enter="verifyAdminPassword"
                     placeholder="กรอกรหัสผ่านแอดมิน"
                     class="w-full bg-slate-100 text-slate-900 placeholder-slate-400 border-2 border-slate-300 focus:border-orange-500 focus:bg-white rounded-xl px-4 py-2.5 text-center text-lg font-extrabold tracking-widest outline-none mb-2">
                 
                 <p v-if="adminLoginError" class="text-xs font-bold text-red-600 mb-3">{{ adminLoginError }}</p>
-
                 <div class="flex gap-2 mt-4">
                     <button @click="showAdminLoginModal = false"
                         class="flex-1 bg-slate-200 hover:bg-slate-300 text-slate-800 py-2.5 rounded-xl font-bold text-sm cursor-pointer">
@@ -543,7 +585,6 @@
                     </h3>
                     <button @click="showDayModal = false" class="text-slate-300 hover:text-white text-2xl leading-none cursor-pointer">&times;</button>
                 </div>
-
                 <div class="p-5 overflow-y-auto space-y-4">
                     <div class="bg-red-50 border-2 border-red-200 rounded-2xl p-3.5 flex items-center justify-between">
                         <div>
@@ -555,13 +596,11 @@
                             <div class="w-12 h-6 bg-slate-300 rounded-full peer peer-checked:bg-red-600 after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-6"></div>
                         </label>
                     </div>
-
                     <div v-if="editingDay.isClosed">
                         <label class="block text-xs font-extrabold text-slate-700 mb-1">ข้อความอธิบายการปิดระบบ:</label>
                         <input type="text" v-model="editingDay.closeReason" placeholder="เช่น วันหยุดประจำเดือน, ระบบปิดบริการ"
                             class="w-full bg-slate-100 text-slate-900 border-2 border-slate-300 rounded-xl px-3 py-2 text-sm font-bold outline-none focus:border-red-500">
                     </div>
-
                     <div v-else>
                         <div class="flex items-center justify-between mb-2">
                             <label class="text-xs font-extrabold text-slate-700">เลือกไรเดอร์ที่วิ่งงาน (เลือกได้สูงสุด 4 คน):</label>
@@ -580,7 +619,6 @@
                         </div>
                     </div>
                 </div>
-
                 <div class="bg-slate-100 px-5 py-3.5 flex items-center justify-end gap-2 border-t border-slate-200">
                     <button @click="showDayModal = false" class="px-4 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold text-sm cursor-pointer">ยกเลิก</button>
                     <button @click="saveEditingDay" class="px-5 py-2 rounded-xl bg-orange-600 hover:bg-orange-500 text-white font-bold text-sm shadow cursor-pointer">บันทึกเวร</button>
@@ -590,26 +628,25 @@
 
         <!-- 3. Modal จัดการไรเดอร์ -->
         <div v-if="showRiderModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-sm">
-            <div class="bg-white text-slate-800 rounded-3xl shadow-2xl border-4 border-amber-400 w-full max-w-xl overflow-hidden flex flex-col max-h-[90vh] animate-slideUp">
+            <div class="bg-white text-slate-800 rounded-3xl shadow-2xl border-4 border-amber-400 w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh] animate-slideUp">
                 <div class="bg-[#0F172A] text-white px-5 py-4 flex items-center justify-between">
                     <h3 class="font-extrabold text-base sm:text-lg text-amber-300 flex items-center gap-2">
-                        <i class="fa-solid fa-helmet-safety"></i> จัดการรายชื่อและสีหมวกไรเดอร์
+                        <i class="fa-solid fa-helmet-safety"></i> จัดการรายชื่อไรเดอร์และข้อมูลจำเพาะ
                     </h3>
                     <button @click="showRiderModal = false" class="text-slate-300 hover:text-white text-2xl leading-none cursor-pointer">&times;</button>
                 </div>
-
                 <div class="p-5 overflow-y-auto space-y-3">
                     <div class="flex items-center justify-between">
-                        <span class="text-xs font-bold text-slate-600">เพิ่ม แก้ไข หรือลบรายชื่อไรเดอร์ (ซิงค์อัตโนมัติทุกเครื่อง)</span>
+                        <span class="text-xs font-bold text-slate-600">เพิ่ม แก้ไข หรือลบรายชื่อไรเดอร์ (จะทำการอัปเดตชื่อในประวัติตารางเวรทันทีป้องกันข้อมูลหลุดเชื่อมโยง)</span>
                         <button @click="addNewRider" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded-xl text-xs font-bold shadow flex items-center gap-1 cursor-pointer">
                             <i class="fa-solid fa-plus"></i> เพิ่มไรเดอร์
                         </button>
                     </div>
-
                     <div v-for="(rider, idx) in riders" :key="rider.id" class="bg-slate-50 border-2 border-slate-200 rounded-2xl p-3 flex flex-wrap items-center gap-2.5">
                         <div class="w-8 h-8 rounded-full border-2 border-slate-900 flex-shrink-0" :style="{ backgroundColor: rider.color }"></div>
                         
                         <input type="text" v-model="rider.name" placeholder="ชื่อไรเดอร์"
+                            @change="onRiderNameInputChanged(idx, rider.name)"
                             class="flex-grow min-w-[100px] bg-white text-slate-900 border border-slate-300 rounded-lg px-2.5 py-1.5 text-sm font-bold outline-none focus:border-blue-500">
                         
                         <select v-model="rider.color" class="bg-white text-slate-900 border border-slate-300 rounded-lg px-2 py-1.5 text-xs font-bold">
@@ -622,7 +659,6 @@
                             <option value="#EF4444">หมวกแดง</option>
                             <option value="#14B8A6">หมวกเขียวมิ้นต์</option>
                         </select>
-
                         <select v-model="rider.heart" class="bg-white text-slate-900 border border-slate-300 rounded-lg px-2 py-1.5 text-sm">
                             <option value="🩷">🩷</option>
                             <option value="🧡">🧡</option>
@@ -632,17 +668,18 @@
                             <option value="💜">💜</option>
                             <option value="❤️">❤️</option>
                         </select>
-
+                        <select v-model="rider.hairStyle" class="bg-white text-slate-900 border border-slate-300 rounded-lg px-2 py-1.5 text-xs font-bold">
+                            <option value="short">ทรงผมสั้น</option>
+                            <option value="long">ทรงผมยาว</option>
+                        </select>
                         <label class="flex items-center gap-1 text-xs font-bold text-slate-700 cursor-pointer">
-                            <input type="checkbox" v-model="rider.hasGlasses" class="accent-blue-600"> แว่น
+                            <input type="checkbox" v-model="rider.hasGlasses" class="accent-blue-600"> สวมแว่น
                         </label>
-
                         <button @click="removeRider(idx)" class="text-red-600 hover:bg-red-100 p-1.5 rounded-lg transition-colors cursor-pointer" title="ลบไรเดอร์">
                             <i class="fa-solid fa-trash"></i>
                         </button>
                     </div>
                 </div>
-
                 <div class="bg-slate-100 px-5 py-3.5 flex items-center justify-end gap-2 border-t border-slate-200">
                     <button @click="showRiderModal = false" class="px-4 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold text-sm cursor-pointer">ปิด</button>
                     <button @click="saveRidersList" class="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-sm shadow cursor-pointer">บันทึกรายชื่อ</button>
@@ -659,12 +696,10 @@
                     </h3>
                     <button @click="showHolidayModal = false" class="text-slate-300 hover:text-white text-2xl leading-none cursor-pointer">&times;</button>
                 </div>
-
                 <div class="p-5 space-y-4">
                     <p class="text-xs text-slate-600">
                         กำหนดวันที่ต้องการให้ปิดระบบอัตโนมัติในทุกๆ เดือน (ค่าเริ่มต้นคือวันที่ <strong>10</strong> และ <strong>20</strong>)
                     </p>
-
                     <div class="flex gap-2">
                         <input type="number" v-model.number="newHolidayDay" min="1" max="31" placeholder="ระบุวันที่ (1-31)"
                             @keyup.enter="addMonthlyHoliday"
@@ -673,7 +708,6 @@
                             เพิ่มวันที่
                         </button>
                     </div>
-
                     <div class="flex flex-wrap gap-2">
                         <span v-for="(d, idx) in monthlyHolidays" :key="d"
                             class="inline-flex items-center gap-2 bg-purple-100 text-purple-900 border border-purple-300 px-3 py-1.5 rounded-full text-sm font-extrabold">
@@ -683,7 +717,6 @@
                         <span v-if="monthlyHolidays.length === 0" class="text-xs text-slate-400">ยังไม่ได้กำหนดวันหยุดประจำเดือน</span>
                     </div>
                 </div>
-
                 <div class="bg-slate-100 px-5 py-3.5 flex items-center justify-end gap-2 border-t border-slate-200">
                     <button @click="showHolidayModal = false" class="px-4 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold text-sm cursor-pointer">ยกเลิก</button>
                     <button @click="saveMonthlyHolidaysConfig" class="px-5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-sm shadow cursor-pointer">บันทึกและอัปเดตตาราง</button>
@@ -700,7 +733,6 @@
                     </h3>
                     <button @click="showEmergencyModal = false" class="text-red-200 hover:text-white text-2xl leading-none cursor-pointer">&times;</button>
                 </div>
-
                 <div class="p-5 space-y-4">
                     <div class="grid grid-cols-2 gap-2.5">
                         <div>
@@ -720,7 +752,6 @@
                             </select>
                         </div>
                     </div>
-
                     <div>
                         <label class="block text-xs font-extrabold text-slate-700 mb-1">เหตุผลการปิดระบบ:</label>
                         <input type="text" v-model="emergencyReason" placeholder="เช่น ระบบปิดบริการ, ฝนตกหนัก/น้ำท่วม"
@@ -733,7 +764,6 @@
                             </button>
                         </div>
                     </div>
-
                     <div class="flex gap-2 pt-2">
                         <button @click="applyEmergencyClosure(true)" class="flex-1 bg-red-600 hover:bg-red-500 text-white py-2.5 rounded-xl font-extrabold text-sm shadow cursor-pointer">
                             ประกาศปิดระบบ
@@ -746,7 +776,38 @@
             </div>
         </div>
 
-        <!-- 6. Modal เปลี่ยนรหัสแอดมิน -->
+        <!-- 6. Modal สำรองข้อมูลและกู้คืน (Backup JSON) -->
+        <div v-if="showBackupModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-sm">
+            <div class="bg-white text-slate-800 rounded-3xl shadow-2xl border-4 border-slate-500 w-full max-w-md overflow-hidden animate-slideUp">
+                <div class="bg-slate-800 text-white px-5 py-4 flex items-center justify-between">
+                    <h3 class="font-extrabold text-base sm:text-lg text-amber-300 flex items-center gap-2">
+                        <i class="fa-solid fa-file-export"></i> ระบบสำรองและกู้คืนตารางวิ่งงาน
+                    </h3>
+                    <button @click="showBackupModal = false" class="text-slate-300 hover:text-white text-2xl leading-none cursor-pointer">&times;</button>
+                </div>
+                <div class="p-5 space-y-4">
+                    <p class="text-xs text-slate-600">
+                        คุณสามารถส่งออกตารางเวรและตั้งค่าทั้งหมดในระบบเป็นไฟล์ JSON เพื่อเก็บบันทึกสำรองไว้ในคอมพิวเตอร์ หรือนำไฟล์มาอัปโหลดคืนค่าในกรณีที่เผลอล้างข้อมูลได้ทุกเมื่อ
+                    </p>
+                    <div class="flex flex-col gap-3">
+                        <button @click="exportBackupData" class="w-full bg-slate-900 hover:bg-slate-800 text-amber-300 py-3 rounded-xl font-bold text-sm shadow-md flex items-center justify-center gap-2 cursor-pointer">
+                            <i class="fa-solid fa-file-arrow-down"></i> ส่งออกข้อมูลเป็นไฟล์ JSON (Download Backup)
+                        </button>
+                        <div class="border-t border-slate-200 my-1"></div>
+                        <div>
+                            <label class="block text-xs font-extrabold text-slate-700 mb-1.5">กู้คืนข้อมูลจากไฟล์ JSON:</label>
+                            <input type="file" @change="importBackupData" accept=".json"
+                                class="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-amber-100 file:text-amber-800 hover:file:bg-amber-200 cursor-pointer">
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-slate-100 px-5 py-3.5 flex items-center justify-end border-t border-slate-200">
+                    <button @click="showBackupModal = false" class="px-4 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold text-sm cursor-pointer">ปิดหน้าต่าง</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 7. Modal เปลี่ยนรหัสแอดมิน -->
         <div v-if="showChangePasswordModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-sm">
             <div class="bg-white text-slate-800 rounded-3xl shadow-2xl border-4 border-amber-400 w-full max-w-sm p-6 animate-slideUp">
                 <div class="w-12 h-12 bg-amber-100 text-amber-700 rounded-2xl flex items-center justify-center text-xl mb-3">
@@ -762,7 +823,6 @@
                 <p v-if="passwordChangeError" class="text-xs font-bold text-red-600 mb-3 bg-red-50 p-2 rounded-lg border border-red-200">
                     {{ passwordChangeError }}
                 </p>
-
                 <div class="flex gap-2 mt-3">
                     <button @click="showChangePasswordModal = false"
                         class="flex-1 bg-slate-200 hover:bg-slate-300 text-slate-800 py-2.5 rounded-xl font-bold text-sm cursor-pointer">
@@ -776,7 +836,7 @@
             </div>
         </div>
 
-        <!-- 7. Modal ตั้งค่า SQL / Supabase Setup -->
+        <!-- 8. Modal ตั้งค่า SQL / Supabase Setup -->
         <div v-if="showSqlModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-sm">
             <div class="bg-white text-slate-800 rounded-3xl shadow-2xl border-4 border-teal-600 w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh] animate-slideUp">
                 <div class="bg-teal-900 text-white px-5 py-4 flex items-center justify-between">
@@ -785,7 +845,6 @@
                     </h3>
                     <button @click="showSqlModal = false" class="text-slate-300 hover:text-white text-2xl leading-none cursor-pointer">&times;</button>
                 </div>
-
                 <div class="p-5 overflow-y-auto space-y-4 text-sm">
                     <div class="p-3 rounded-xl border text-xs font-semibold"
                         :class="dbStatus === 'connected' ? 'bg-emerald-50 border-emerald-300 text-emerald-900' : 'bg-amber-50 border-amber-300 text-amber-950'">
@@ -796,7 +855,6 @@
                             ⚠️ <strong>เหลือขั้นตอนเดียว (ทำครั้งเดียวจบ):</strong> เพื่อความปลอดภัย Supabase ไม่อนุญาตให้หน้าเว็บสร้างตารางเองอัตโนมัติ กรุณากด <strong>"คัดลอก SQL"</strong> ด้านล่าง ไปวางในเมนู <strong>SQL Editor</strong> ของ Supabase แล้วกด <strong>Run</strong> จากนั้นระบบจะ Auto-Sync อัตโนมัติตลอดไปครับ
                         </p>
                     </div>
-
                     <div class="bg-slate-100 p-3.5 rounded-2xl border border-slate-300">
                         <div class="flex items-center justify-between mb-2">
                             <span class="text-xs font-extrabold text-slate-800">คำสั่ง SQL สร้างตารางและเปิด Real-time Auto-Sync:</span>
@@ -807,7 +865,6 @@
                         <pre class="bg-slate-900 text-amber-300 p-3 rounded-xl overflow-x-auto font-mono text-[11px] leading-relaxed select-all">{{ sqlSetupScript }}</pre>
                     </div>
                 </div>
-
                 <div class="bg-slate-100 px-5 py-3.5 flex items-center justify-between border-t border-slate-200">
                     <button @click="retrySupabaseSync" class="bg-teal-600 hover:bg-teal-500 text-white px-4 py-2 rounded-xl font-bold text-sm shadow flex items-center gap-1.5 cursor-pointer">
                         <i class="fa-solid fa-rotate"></i> ตรวจสอบการเชื่อมต่อ
@@ -818,7 +875,6 @@
                 </div>
             </div>
         </div>
-
     </div>
 
     <!-- ==================== VUE 3 + SUPABASE AUTO-SYNC APPLICATION SCRIPT ==================== -->
@@ -845,22 +901,17 @@
   days jsonb not null default '[]'::jsonb,
   updated_at timestamptz default now()
 );
-
 create table if not exists public.settings (
   key text primary key,
   value jsonb not null,
   updated_at timestamptz default now()
 );
-
 alter table public.schedules enable row level security;
 alter table public.settings enable row level security;
-
 drop policy if exists "Public access schedules" on public.schedules;
 create policy "Public access schedules" on public.schedules for all using (true) with check (true);
-
 drop policy if exists "Public access settings" on public.settings;
 create policy "Public access settings" on public.settings for all using (true) with check (true);
-
 do $$
 begin
   if not exists (
@@ -885,7 +936,7 @@ end $$;`
                 ]
                 const thaiDaysOfWeek = ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์']
 
-                // เดือนและปีปัจจุบัน (พ.ศ. 2568 - 2575 => ค.ศ. 2025 - 2032)
+                // เดือนและปีปัจจุบัน
                 const now = new Date()
                 const currentMonth = ref(now.getMonth())
                 const currentYear = ref(Math.min(2032, Math.max(2025, now.getFullYear())))
@@ -905,18 +956,20 @@ end $$;`
                     { id: 5, name: 'กาน', color: '#EAB308', heart: '💛', hairStyle: 'short', hasGlasses: false },
                     { id: 6, name: 'จักร', color: '#A855F7', heart: '💜', hairStyle: 'short', hasGlasses: false }
                 ]
-
                 const riders = ref(JSON.parse(JSON.stringify(defaultRiders)))
                 const monthlyHolidays = ref([10, 20])
                 const adminPassword = ref(localStorage.getItem('wolf_admin_password') || '1234')
                 const monthlySchedules = ref({})
 
-                // สถานะการเชื่อมต่อ Supabase ('connecting' | 'connected' | 'sql_missing')
+                // บันทึกความสัมพันธ์ของชื่อไรเดอร์ที่เคยเปลี่ยน เพื่ออัปเดตย้อนหลังในฟังก์ชันอัปเดตชื่อในตารางเวรป้องกันบั๊กสูญหาย
+                const riderRenameMap = ref({})
+
+                // สถานะการเชื่อมต่อ Supabase
                 const dbStatus = ref('connecting')
                 const showSqlModal = ref(false)
                 const sqlSetupScript = SQL_SETUP_SCRIPT
 
-                // สถานะแอดมิน (เริ่มต้นเป็นโหมดดูตารางปกติเสมอ)
+                // สถานะแอดมิน
                 const adminMode = ref(false)
                 const showAdminLoginModal = ref(false)
                 const adminPinInput = ref('')
@@ -928,12 +981,14 @@ end $$;`
                 const showRiderModal = ref(false)
                 const showHolidayModal = ref(false)
                 const showEmergencyModal = ref(false)
+                const showBackupModal = ref(false)
                 const showChangePasswordModal = ref(false)
 
-                // เช็คว่ากำลังเปิดหน้าต่างแก้ไขอยู่หรือไม่ (เพื่อไม่ให้ Auto-Sync เขียนทับขณะแอดมินกำลังพิมพ์)
+                // เช็คว่ากำลังเปิดหน้าต่างแก้ไขอยู่หรือไม่
                 const isAnyModalOpen = computed(() => {
                     return showAdminLoginModal.value || showDayModal.value || showRiderModal.value ||
-                           showHolidayModal.value || showEmergencyModal.value || showChangePasswordModal.value || showSqlModal.value
+                           showHolidayModal.value || showEmergencyModal.value || showBackupModal.value ||
+                           showChangePasswordModal.value || showSqlModal.value
                 })
 
                 // Toast Notification
@@ -947,6 +1002,14 @@ end $$;`
 
                 const monthKey = computed(() => `${currentYear.value}-${String(currentMonth.value + 1).padStart(2, '0')}`)
 
+                // ตรวจสอบวันนี้เพื่อนำไปแสดงผล Today Badge
+                const isToday = (dayNum) => {
+                    const todayDate = new Date()
+                    return todayDate.getDate() === Number(dayNum) &&
+                           todayDate.getMonth() === currentMonth.value &&
+                           todayDate.getFullYear() === currentYear.value
+                }
+
                 // ตรวจสอบ Error กรณียังไม่ได้รัน SQL สร้างตาราง
                 const isMissingTableError = (err) => {
                     if (!err) return false
@@ -955,19 +1018,38 @@ end $$;`
                     return code === '42P01' || code === 'PGRST205' || msg.includes('does not exist') || msg.includes('schema cache') || msg.includes('not found')
                 }
 
-                // สร้างตารางเริ่มต้นของเดือน (หยุดอัตโนมัติวันที่ 10 และ 20 ของทุกเดือน)
+                // สถิติจำนวนเวรวิ่งงานของไรเดอร์แยกตามวันธรรมดา vs วันเสาร์-อาทิตย์
+                const getRiderShiftStats = (riderName) => {
+                    const days = periodFilteredDays.value
+                    let weekdayCount = 0
+                    let weekendCount = 0
+                    days.forEach(d => {
+                        if (!d.isClosed && d.riders.includes(riderName)) {
+                            if (d.isWeekend) {
+                                weekendCount++
+                            } else {
+                                weekdayCount++
+                            }
+                        }
+                    })
+                    return {
+                        weekday: weekdayCount,
+                        weekend: weekendCount,
+                        total: weekdayCount + weekendCount
+                    }
+                }
+
+                // สร้างตารางเริ่มต้นของเดือน
                 const buildDefaultDaysForMonth = (year, month) => {
                     const totalDays = new Date(year, month + 1, 0).getDate()
                     const days = []
                     const riderNames = riders.value.map(r => r.name)
-
                     for (let d = 1; d <= totalDays; d++) {
                         const dateObj = new Date(year, month, d)
                         const dow = dateObj.getDay()
                         const isWeekend = (dow === 0 || dow === 6)
                         const isHoliday = monthlyHolidays.value.includes(d)
                         const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`
-
                         let assigned = []
                         if (!isHoliday && riderNames.length > 0) {
                             const count = Math.min(3, riderNames.length)
@@ -975,7 +1057,6 @@ end $$;`
                                 assigned.push(riderNames[(d + i) % riderNames.length])
                             }
                         }
-
                         days.push({
                             dateStr,
                             dateNum: String(d),
@@ -989,7 +1070,116 @@ end $$;`
                     return days
                 }
 
-                // โหลดข้อมูลสำรองจาก localStorage หากยังไม่มีตารางบน Supabase
+                // สุ่มเวรแบบเกลี่ยอัตโนมัติ (Auto-Balance) ยุติธรรมสูงสุด
+                const autoBalanceShifts = async () => {
+                    const days = monthlySchedules.value[monthKey.value] || []
+                    const activeRiders = riders.value.map(r => r.name)
+                    if (activeRiders.length === 0) {
+                        showToast('ไม่สามารถจัดเวรได้เนื่องจากยังไม่มีไรเดอร์ในระบบ', 'error')
+                        return
+                    }
+
+                    // แยกกลุ่มวันธรรมดาและวันเสาร์อาทิตย์เพื่อสุ่มเกลี่ยแยกกัน ป้องกันการได้เวรเสาร์-อาทิตย์ซ้อน
+                    const weekdays = days.filter(d => !d.isClosed && !d.isWeekend)
+                    const weekends = days.filter(d => !d.isClosed && d.isWeekend)
+
+                    // ตัวนับรอบเพื่อช่วยกระจายคิวให้เท่าๆ กัน
+                    let weekdayIndex = 0
+                    let weekendIndex = 0
+
+                    // สุ่มเรียงสับเปลี่ยนรายชื่อก่อนกระจายคิวเพื่อเพิ่มความไม่ซ้ำจำเจ
+                    const shuffledRiders = [...activeRiders].sort(() => Math.random() - 0.5)
+
+                    weekdays.forEach(d => {
+                        const assigned = []
+                        const numRequired = Math.min(3, shuffledRiders.length)
+                        for (let i = 0; i < numRequired; i++) {
+                            assigned.push(shuffledRiders[(weekdayIndex + i) % shuffledRiders.length])
+                        }
+                        d.riders = assigned
+                        weekdayIndex += numRequired
+                    })
+
+                    weekends.forEach(d => {
+                        const assigned = []
+                        const numRequired = Math.min(3, shuffledRiders.length)
+                        for (let i = 0; i < numRequired; i++) {
+                            assigned.push(shuffledRiders[(weekendIndex + i) % shuffledRiders.length])
+                        }
+                        d.riders = assigned
+                        weekendIndex += numRequired
+                    })
+
+                    const ok = await saveCurrentScheduleToCloud()
+                    if (ok) {
+                        showToast('สุ่มเกลี่ยจำนวนเวรอัตโนมัติอย่างเท่าเทียมเรียบร้อยแล้ว!', 'success')
+                    }
+                }
+
+                // คัดลอกตารางจากเดือนก่อนหน้า (Copy Previous Month Schedule)
+                const copyPreviousMonthSchedule = async () => {
+                    // คำนวณ Key ของเดือนก่อน
+                    let prevMonth = currentMonth.value - 1
+                    let prevYear = currentYear.value
+                    if (prevMonth < 0) {
+                        prevMonth = 11
+                        prevYear -= 1
+                    }
+                    const prevMonthKey = `${prevYear}-${String(prevMonth + 1).padStart(2, '0')}`
+
+                    try {
+                        let prevDays = null
+                        // ดึงข้อมูลจาก Cloud ก่อน หากไม่สำเร็จดึงจาก local
+                        if (supabaseClient) {
+                            const { data, error } = await supabaseClient
+                                .from('schedules')
+                                .select('days')
+                                .eq('month_key', prevMonthKey)
+                                .maybeSingle()
+                            if (!error && data && Array.isArray(data.days)) {
+                                prevDays = data.days
+                            }
+                        }
+                        if (!prevDays && monthlySchedules.value[prevMonthKey]) {
+                            prevDays = monthlySchedules.value[prevMonthKey]
+                        }
+
+                        if (!prevDays) {
+                            showToast('ไม่พบประวัติตารางเวรของเดือนก่อนหน้าในระบบ', 'error')
+                            return
+                        }
+
+                        // คัดลอกรูปแบบไรเดอร์ที่จัดไว้
+                        const currentDays = monthlySchedules.value[monthKey.value] || []
+                        currentDays.forEach((d, idx) => {
+                            if (idx < prevDays.length) {
+                                // คัดลอกไรเดอร์ยกเว้นกรณีที่เป็นวันหยุดประจำเดือนที่ตั้งค่าไว้
+                                if (!d.isClosed) {
+                                    // คัดเลือกเฉพาะไรเดอร์ที่ยังมีชื่ออยู่ในระบบปัจจุบัน
+                                    const activeNames = riders.value.map(r => r.name)
+                                    d.riders = prevDays[idx].riders.filter(name => activeNames.includes(name))
+                                }
+                            }
+                        });
+
+                        const ok = await saveCurrentScheduleToCloud()
+                        if (ok) {
+                            showToast(`คัดลอกตารางเวรจากเดือน ${thaiMonths[prevMonth]} เรียบร้อยแล้ว`, 'success')
+                        }
+                    } catch (e) {
+                        showToast('เกิดข้อผิดพลาดในการคัดลอกข้อมูลตารางเดือนก่อนหน้า', 'error')
+                    }
+                }
+
+                // ตรวจจับการป้อนค่าข้อมูลไรเดอร์หากมีการแก้ไขชื่อเพื่อเตรียม Map
+                const onRiderNameInputChanged = (idx, newName) => {
+                    const originalName = defaultRiders[idx] ? defaultRiders[idx].name : riders.value[idx].name
+                    if (originalName && originalName !== newName) {
+                        riderRenameMap.value[originalName] = newName
+                    }
+                }
+
+                // โหลดข้อมูลสำรองจาก localStorage
                 const loadLocalFallback = () => {
                     try {
                         const savedRiders = localStorage.getItem('wolf_riders')
@@ -1034,11 +1224,9 @@ end $$;`
                         if (isMissingTableError(error)) dbStatus.value = 'sql_missing'
                         throw error
                     }
-
                     dbStatus.value = 'connected'
                     const foundKeys = new Set()
                     let changed = false
-
                     if (Array.isArray(data)) {
                         data.forEach(row => {
                             foundKeys.add(row.key)
@@ -1067,7 +1255,6 @@ end $$;`
                             }
                         })
                     }
-
                     // บันทึกค่าเริ่มต้นขึ้น settings แบบไม่เขียนทับของเดิม
                     const initialUpserts = []
                     if (!foundKeys.has('riders')) {
@@ -1094,15 +1281,12 @@ end $$;`
                         .select('days')
                         .eq('month_key', targetMonthKey)
                         .maybeSingle()
-
                     if (error) {
                         if (isMissingTableError(error)) dbStatus.value = 'sql_missing'
                         throw error
                     }
-
                     dbStatus.value = 'connected'
                     let changed = false
-
                     if (data && Array.isArray(data.days) && data.days.length > 0) {
                         if (JSON.stringify(monthlySchedules.value[targetMonthKey]) !== JSON.stringify(data.days)) {
                             monthlySchedules.value[targetMonthKey] = data.days
@@ -1136,7 +1320,7 @@ end $$;`
                     }
                 }
 
-                // ระบบซิงค์อัตโนมัติเบื้องหลัง (ทุก 10 วินาที + ทันทีเมื่อเปิดหน้าจอ/สลับแท็บกลับมา)
+                // ระบบซิงค์อัตโนมัติเบื้องหลัง
                 const silentAutoSync = async () => {
                     if (!supabaseClient || isAnyModalOpen.value) return
                     try {
@@ -1196,14 +1380,12 @@ end $$;`
 
                 // สร้างตารางเริ่มต้นในหน่วยความจำทันทีก่อน Mount
                 monthlySchedules.value[monthKey.value] = buildDefaultDaysForMonth(currentYear.value, currentMonth.value)
-
                 let autoSyncInterval = null
 
                 onMounted(async () => {
                     await syncAllFromCloud()
                     setupRealtimeSubscription()
-                    // ซิงค์อัตโนมัติทุกๆ 10 วินาที
-                    autoSyncInterval = setInterval(silentAutoSync, 10000)
+                    autoSyncInterval = setInterval(silentAutoSync, 30000) // เพิ่มระยะเวลาหน่วงของ Interval เพื่อประหยัด Supabase quota
                     document.addEventListener('visibilitychange', handleVisibilityOrFocus)
                     window.addEventListener('focus', handleVisibilityOrFocus)
                 })
@@ -1241,7 +1423,6 @@ end $$;`
 
                 // รายการวันที่แสดงผลในโปสเตอร์
                 const currentMonthDays = computed(() => monthlySchedules.value[monthKey.value] || [])
-
                 const periodFilteredDays = computed(() => {
                     const all = currentMonthDays.value
                     if (periodFilter.value === 'first-half') {
@@ -1291,10 +1472,8 @@ end $$;`
                         adminLoginError.value = 'กรุณากรอกรหัสผ่านแอดมิน'
                         return
                     }
-
                     isVerifyingPin.value = true
                     adminLoginError.value = ''
-
                     try {
                         if (supabaseClient) {
                             const { data, error } = await supabaseClient
@@ -1302,7 +1481,6 @@ end $$;`
                                 .select('value')
                                 .eq('key', 'admin_password')
                                 .maybeSingle()
-
                             if (!error && data && data.value !== null && data.value !== undefined) {
                                 adminPassword.value = String(data.value)
                                 localStorage.setItem('wolf_admin_password', adminPassword.value)
@@ -1313,7 +1491,6 @@ end $$;`
                     } finally {
                         isVerifyingPin.value = false
                     }
-
                     if (entered === adminPassword.value) {
                         adminMode.value = true
                         showAdminLoginModal.value = false
@@ -1346,13 +1523,10 @@ end $$;`
                         passwordChangeError.value = 'กรุณาตั้งรหัสผ่านอย่างน้อย 4 ตัวอักษร'
                         return
                     }
-
                     isSavingPassword.value = true
                     passwordChangeError.value = ''
-
                     adminPassword.value = nextPin
                     localStorage.setItem('wolf_admin_password', nextPin)
-
                     try {
                         if (!supabaseClient) throw new Error('Supabase client unavailable')
                         const { error } = await supabaseClient
@@ -1362,7 +1536,6 @@ end $$;`
                                 value: nextPin,
                                 updated_at: new Date().toISOString()
                             }, { onConflict: 'key' })
-
                         if (error) {
                             if (isMissingTableError(error)) {
                                 dbStatus.value = 'sql_missing'
@@ -1372,7 +1545,6 @@ end $$;`
                             }
                             return
                         }
-
                         dbStatus.value = 'connected'
                         showChangePasswordModal.value = false
                         showToast('เปลี่ยนรหัสแอดมินและซิงค์ขึ้น Cloud เรียบร้อย!', 'success')
@@ -1381,6 +1553,64 @@ end $$;`
                     } finally {
                         isSavingPassword.value = false
                     }
+                }
+
+                // ==================== EXPORT & IMPORT BACKUP JSON ====================
+                const openBackupModal = () => {
+                    showBackupModal.value = true
+                }
+
+                const exportBackupData = () => {
+                    try {
+                        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({
+                            riders: riders.value,
+                            monthlyHolidays: monthlyHolidays.value,
+                            monthlySchedules: monthlySchedules.value,
+                            adminPassword: adminPassword.value
+                        }));
+                        const downloadAnchor = document.createElement('a');
+                        downloadAnchor.setAttribute("href", dataStr);
+                        downloadAnchor.setAttribute("download", `WolfDelivery-Backup-${monthKey.value}.json`);
+                        document.body.appendChild(downloadAnchor);
+                        downloadAnchor.click();
+                        downloadAnchor.remove();
+                        showToast('ส่งออกไฟล์สำรองข้อมูล JSON เรียบร้อย!', 'success')
+                    } catch (e) {
+                        showToast('เกิดข้อผิดพลาดในการดาวน์โหลดไฟล์สำรองข้อมูล', 'error')
+                    }
+                }
+
+                const importBackupData = (event) => {
+                    const file = event.target.files[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = async (e) => {
+                        try {
+                            const imported = JSON.parse(e.target.result);
+                            if (imported) {
+                                if (imported.riders) riders.value = imported.riders;
+                                if (imported.monthlyHolidays) monthlyHolidays.value = imported.monthlyHolidays;
+                                if (imported.monthlySchedules) monthlySchedules.value = imported.monthlySchedules;
+                                if (imported.adminPassword) {
+                                    adminPassword.value = imported.adminPassword;
+                                    localStorage.setItem('wolf_admin_password', imported.adminPassword);
+                                }
+                                saveLocalFallback();
+                                
+                                // เซฟขึ้น cloud ด้วย
+                                await saveSettingKeyToCloud('riders', riders.value);
+                                await saveSettingKeyToCloud('monthly_holidays', monthlyHolidays.value);
+                                await saveSettingKeyToCloud('admin_password', adminPassword.value);
+                                await saveCurrentScheduleToCloud();
+
+                                showToast('กู้คืนข้อมูลทั้งหมดจากไฟล์ JSON เข้าสู่ระบบเรียบร้อย!', 'success');
+                                showBackupModal.value = false;
+                            }
+                        } catch (err) {
+                            showToast('ไฟล์ JSON ไม่ถูกต้องหรือไม่สมบูรณ์', 'error');
+                        }
+                    };
+                    reader.readAsText(file);
                 }
 
                 // ==================== SAVE SCHEDULE & SETTINGS TO SUPABASE ====================
@@ -1395,7 +1625,6 @@ end $$;`
                                 days: monthlySchedules.value[monthKey.value],
                                 updated_at: new Date().toISOString()
                             }, { onConflict: 'month_key' })
-
                         if (error) {
                             if (isMissingTableError(error)) dbStatus.value = 'sql_missing'
                             showToast('บันทึกในหน้าจอแล้ว (กรุณารัน SQL เพื่อเปิด Auto-Sync)', 'error')
@@ -1420,7 +1649,6 @@ end $$;`
                                 value,
                                 updated_at: new Date().toISOString()
                             }, { onConflict: 'key' })
-
                         if (error) {
                             if (isMissingTableError(error)) dbStatus.value = 'sql_missing'
                             showToast('บันทึกในหน้าจอแล้ว (กรุณารัน SQL เพื่อเปิด Auto-Sync)', 'error')
@@ -1436,7 +1664,6 @@ end $$;`
 
                 // แก้ไขเวรรายวัน
                 const editingDay = ref({ dateStr: '', dateNum: '', dayName: '', isWeekend: false, isClosed: false, closeReason: '', riders: [] })
-
                 const openEditDayModal = (day) => {
                     editingDay.value = JSON.parse(JSON.stringify(day))
                     showDayModal.value = true
@@ -1456,7 +1683,10 @@ end $$;`
                 }
 
                 // จัดการรายชื่อไรเดอร์
-                const openRiderManager = () => { showRiderModal.value = true }
+                const openRiderManager = () => { 
+                    riderRenameMap.value = {} // ล้างค่า Map ชื่อก่อนเริ่มจัดการใหม่
+                    showRiderModal.value = true 
+                }
                 const addNewRider = () => {
                     riders.value.push({
                         id: Date.now(),
@@ -1467,6 +1697,7 @@ end $$;`
                         hasGlasses: false
                     })
                 }
+
                 const removeRider = (idx) => {
                     if (riders.value.length <= 1) {
                         showToast('ต้องมีไรเดอร์อย่างน้อย 1 คน', 'error')
@@ -1474,13 +1705,31 @@ end $$;`
                     }
                     riders.value.splice(idx, 1)
                 }
+
                 const saveRidersList = async () => {
+                    // ป้องกันบั๊กไรเดอร์ไม่มีตัวตนย้อนหลัง: วนลูปแก้ประวัติรายชื่อเก่าในเดือนที่กำลังแสดงผล
+                    let hasRenames = Object.keys(riderRenameMap.value).length > 0
+                    if (hasRenames) {
+                        const days = monthlySchedules.value[monthKey.value] || []
+                        days.forEach(d => {
+                            if (Array.isArray(d.riders)) {
+                                d.riders = d.riders.map(rName => {
+                                    if (riderRenameMap.value[rName]) {
+                                        return riderRenameMap.value[rName]
+                                    }
+                                    return rName
+                                })
+                            }
+                        })
+                        await saveCurrentScheduleToCloud()
+                    }
+
                     showRiderModal.value = false
                     const ok = await saveSettingKeyToCloud('riders', riders.value)
-                    if (ok) showToast('บันทึกรายชื่อไรเดอร์และซิงค์เรียบร้อย', 'success')
+                    if (ok) showToast('บันทึกรายชื่อไรเดอร์และซิงค์ตารางเรียบร้อย', 'success')
                 }
 
-                // จัดการวันหยุดประจำเดือน (ค่าเริ่มต้น 10 และ 20)
+                // จัดการวันหยุดประจำเดือน
                 const newHolidayDay = ref('')
                 const openHolidayManager = () => { showHolidayModal.value = true }
                 const addMonthlyHoliday = () => {
@@ -1491,9 +1740,11 @@ end $$;`
                         newHolidayDay.value = ''
                     }
                 }
+
                 const removeMonthlyHoliday = (idx) => {
                     monthlyHolidays.value.splice(idx, 1)
                 }
+
                 const saveMonthlyHolidaysConfig = async () => {
                     const days = monthlySchedules.value[monthKey.value] || []
                     const names = riders.value.map(r => r.name)
@@ -1521,7 +1772,6 @@ end $$;`
                 const emergencyStartDay = ref(1)
                 const emergencyEndDay = ref(1)
                 const emergencyReason = ref('ระบบปิดบริการ')
-
                 const openEmergencyModal = () => {
                     const first = periodFilteredDays.value.length > 0 ? Number(periodFilteredDays.value[0].dateNum) : 1
                     emergencyStartDay.value = first
@@ -1534,7 +1784,6 @@ end $$;`
                     const end = Math.max(emergencyStartDay.value, emergencyEndDay.value)
                     const days = monthlySchedules.value[monthKey.value] || []
                     const names = riders.value.map(r => r.name)
-
                     days.forEach(d => {
                         const num = Number(d.dateNum)
                         if (num >= start && num <= end) {
@@ -1550,7 +1799,6 @@ end $$;`
                             }
                         }
                     })
-
                     showEmergencyModal.value = false
                     const ok = await saveCurrentScheduleToCloud()
                     if (ok) {
@@ -1580,13 +1828,13 @@ end $$;`
                     isExporting.value = true
                     const prevFilter = selectedRiderFilter.value
                     selectedRiderFilter.value = null
-
-                    await new Promise(r => setTimeout(r, 120))
+                    await new Promise(r => setTimeout(r, 150))
                     try {
                         const canvas = await html2canvas(target, {
                             scale: 2,
                             useCORS: true,
-                            backgroundColor: '#FEF9C3'
+                            backgroundColor: '#FEF9C3',
+                            windowWidth: 1024 // บังคับการเรนเดอร์ขนาด Desktop ป้องกันเพี้ยนบนหน้าจอมือถือ
                         })
                         const link = document.createElement('a')
                         link.download = `WolfDelivery-${thaiMonths[currentMonth.value]}-${currentYear.value + 543}.png`
@@ -1608,6 +1856,7 @@ end $$;`
                     riders, monthlyHolidays, dbStatus, showSqlModal, sqlSetupScript,
                     adminMode, showAdminLoginModal, adminPinInput, adminLoginError, isVerifyingPin,
                     toast, currentMonthDays, periodFilteredDays, displayedDays, posterDateRangeLabel,
+                    isToday, getRiderShiftStats, autoBalanceShifts, copyPreviousMonthSchedule, onRiderNameInputChanged,
                     onMonthOrYearChange, retrySupabaseSync, getRiderInfo, getRiderShiftCount,
                     openAdminModal, verifyAdminPassword, lockAdminScreen,
                     showChangePasswordModal, newAdminPinInput, passwordChangeError, isSavingPassword,
@@ -1616,6 +1865,7 @@ end $$;`
                     showRiderModal, openRiderManager, addNewRider, removeRider, saveRidersList,
                     showHolidayModal, newHolidayDay, openHolidayManager, addMonthlyHoliday, removeMonthlyHoliday, saveMonthlyHolidaysConfig,
                     showEmergencyModal, emergencyStartDay, emergencyEndDay, emergencyReason, openEmergencyModal, applyEmergencyClosure,
+                    showBackupModal, openBackupModal, exportBackupData, importBackupData,
                     copySqlCode, exportPosterPng
                 }
             }
