@@ -142,42 +142,60 @@
         </div>
 
         <!-- ==================== TOP DARK NAVIGATION BAR (#0F172A) ==================== -->
-        <nav data-html2canvas-ignore="true" class="bg-[#0F172A] text-white border-b-4 border-amber-400 sticky top-0 z-40 shadow-xl no-print">
-            <div class="max-w-5xl mx-auto px-3 sm:px-4 py-2.5 flex flex-wrap items-center justify-between gap-2.5">
+        <nav data-html2canvas-ignore="true" class="bg-[#0F172A] text-white border-b-2 sm:border-b-4 border-amber-400 sticky top-0 z-40 shadow-xl no-print">
+            <div class="max-w-5xl mx-auto px-2 sm:px-4 py-1.5 sm:py-2.5 flex flex-col sm:flex-row sm:flex-wrap sm:items-center sm:justify-between gap-1.5 sm:gap-2.5">
                 
-                <!-- 1. โลโก้ Wolf Delivery + ป้ายสถานะ Auto-Sync / ปุ่มสร้างตาราง SQL -->
-                <div class="flex items-center gap-2.5">
-                    <div class="w-9 h-9 rounded-full bg-orange-500 border-2 border-amber-300 flex items-center justify-center text-lg shadow">
-                        🐺
+                <!-- 1. โลโก้ Wolf Delivery + ป้ายสถานะ Auto-Sync + ปุ่มสลับกะบนมือถือ -->
+                <div class="flex items-center justify-between gap-2 w-full sm:w-auto">
+                    <div class="flex items-center gap-1.5 sm:gap-2.5 min-w-0">
+                        <div class="w-7 h-7 sm:w-9 sm:h-9 rounded-full bg-orange-500 border-2 border-amber-300 flex items-center justify-center text-sm sm:text-lg shadow flex-shrink-0">
+                            🐺
+                        </div>
+                        <div class="flex items-center gap-1.5 sm:gap-2 min-w-0">
+                            <span class="font-display font-black text-sm sm:text-base text-amber-300 leading-none truncate">Wolf Delivery</span>
+                            
+                            <!-- สถานะเชื่อมต่อสำเร็จ: Auto-Sync อัตโนมัติ -->
+                            <span v-if="dbStatus === 'connected'"
+                                class="inline-flex items-center gap-1 text-[10px] sm:text-[11px] px-1.5 sm:px-2.5 py-0.5 rounded-full font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-400/50 whitespace-nowrap"
+                                title="ซิงค์ข้อมูลอัตโนมัติทุกเครื่องแบบ Real-time">
+                                <span class="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                                <span>Auto-Sync อัตโนมัติ</span>
+                            </span>
+                            <!-- สถานะกำลังซิงค์ -->
+                            <span v-else-if="dbStatus === 'connecting'"
+                                class="inline-flex items-center gap-1 text-[10px] sm:text-[11px] px-1.5 sm:px-2.5 py-0.5 rounded-full font-bold bg-slate-800 text-slate-300 border border-slate-600 whitespace-nowrap">
+                                <i class="fa-solid fa-spinner fa-spin text-[9px] sm:text-[10px]"></i>
+                                <span>กำลังซิงค์...</span>
+                            </span>
+                            <!-- ปุ่มแจ้งเตือนเมื่อยังไม่ได้รันคำสั่งสร้างตาราง SQL ใน Supabase -->
+                            <button v-else @click="showSqlModal = true"
+                                class="inline-flex items-center gap-1 text-[10px] sm:text-[11px] px-2 py-0.5 rounded-full font-extrabold bg-amber-400 hover:bg-amber-300 text-slate-950 shadow animate-pulse cursor-pointer whitespace-nowrap">
+                                ⚠️ คลิกสร้างตาราง SQL (ทำครั้งเดียว)
+                            </button>
+                        </div>
                     </div>
-                    <div class="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
-                        <span class="font-display font-black text-base text-amber-300 leading-none">Wolf Delivery</span>
-                        
-                        <!-- สถานะเชื่อมต่อสำเร็จ: Auto-Sync อัตโนมัติ -->
-                        <span v-if="dbStatus === 'connected'"
-                            class="inline-flex items-center gap-1.5 text-[11px] px-2.5 py-0.5 rounded-full font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-400/50"
-                            title="ซิงค์ข้อมูลอัตโนมัติทุกเครื่องแบบ Real-time">
-                            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                            Auto-Sync อัตโนมัติ
-                        </span>
-                        <!-- สถานะกำลังซิงค์ -->
-                        <span v-else-if="dbStatus === 'connecting'"
-                            class="inline-flex items-center gap-1.5 text-[11px] px-2.5 py-0.5 rounded-full font-bold bg-slate-800 text-slate-300 border border-slate-600">
-                            <i class="fa-solid fa-spinner fa-spin text-[10px]"></i>
-                            กำลังซิงค์...
-                        </span>
-                        <!-- ปุ่มแจ้งเตือนเมื่อยังไม่ได้รันคำสั่งสร้างตาราง SQL ใน Supabase -->
-                        <button v-else @click="showSqlModal = true"
-                            class="inline-flex items-center gap-1 text-[11px] px-2.5 py-0.5 rounded-full font-extrabold bg-amber-400 hover:bg-amber-300 text-slate-950 shadow animate-pulse cursor-pointer">
-                            ⚠️ คลิกสร้างตาราง SQL (ทำครั้งเดียว)
+
+                    <!-- ปุ่มสลับโหมด กลางวัน / กลางคืน (แสดงขวาบนเมื่ออยู่ในมือถือ) -->
+                    <div class="inline-flex sm:hidden bg-slate-900 p-0.5 rounded-lg border border-slate-600 shadow-inner flex-shrink-0">
+                        <button @click="switchShiftType('day')"
+                            class="px-2 py-0.5 rounded-md text-[11px] font-extrabold flex items-center gap-1 transition-all cursor-pointer"
+                            :class="shiftType === 'day' ? 'bg-amber-400 text-slate-950 shadow' : 'text-slate-300 hover:text-white'">
+                            <span>☀️</span>
+                            <span>กลางวัน</span>
+                        </button>
+                        <button @click="switchShiftType('night')"
+                            class="px-2 py-0.5 rounded-md text-[11px] font-extrabold flex items-center gap-1 transition-all cursor-pointer"
+                            :class="shiftType === 'night' ? 'bg-indigo-500 text-white shadow' : 'text-slate-300 hover:text-white'">
+                            <span>🌙</span>
+                            <span>กลางคืน</span>
                         </button>
                     </div>
                 </div>
 
-                <!-- 2. ปุ่มสลับกะ (☀️ กลางวัน / 🌙 กลางคืน) + ตัวเลือกเดือน ปี พ.ศ. และช่วงวันที่ -->
-                <div class="flex flex-wrap items-center gap-1.5 sm:gap-2">
-                    <!-- ปุ่มสลับโหมด กลางวัน / กลางคืน -->
-                    <div class="inline-flex bg-slate-900 p-0.5 rounded-xl border border-slate-600 shadow-inner">
+                <!-- 2. ปุ่มสลับกะ (Desktop) + ตัวเลือกเดือน ปี พ.ศ. และช่วงวันที่ (จัดแถวเดียวกะทัดรัดบนมือถือ) -->
+                <div class="grid grid-cols-3 sm:flex sm:flex-wrap items-center gap-1 sm:gap-2 w-full sm:w-auto">
+                    <!-- ปุ่มสลับโหมด กลางวัน / กลางคืน (แสดงบนจอ sm ขึ้นไป) -->
+                    <div class="hidden sm:inline-flex bg-slate-900 p-0.5 rounded-xl border border-slate-600 shadow-inner">
                         <button @click="switchShiftType('day')"
                             class="px-2.5 py-1 rounded-lg text-xs sm:text-sm font-extrabold flex items-center gap-1 transition-all cursor-pointer"
                             :class="shiftType === 'day' ? 'bg-amber-400 text-slate-950 shadow' : 'text-slate-300 hover:text-white'">
@@ -193,102 +211,103 @@
                     </div>
 
                     <select v-model="currentMonth" @change="onMonthOrYearChange"
-                        class="bg-slate-800 text-amber-300 border border-slate-600 rounded-xl px-2.5 py-1.5 text-xs sm:text-sm font-bold outline-none focus:border-amber-400 cursor-pointer">
+                        class="w-full sm:w-auto bg-slate-800 text-amber-300 border border-slate-600 rounded-lg sm:rounded-xl px-1.5 sm:px-2.5 py-1 sm:py-1.5 text-[11px] sm:text-sm font-bold outline-none focus:border-amber-400 cursor-pointer">
                         <option v-for="(m, idx) in thaiMonths" :value="idx" :key="idx">{{ m }}</option>
                     </select>
                     <select v-model="currentYear" @change="onMonthOrYearChange"
-                        class="bg-slate-800 text-amber-300 border border-slate-600 rounded-xl px-2.5 py-1.5 text-xs sm:text-sm font-bold outline-none focus:border-amber-400 cursor-pointer">
+                        class="w-full sm:w-auto bg-slate-800 text-amber-300 border border-slate-600 rounded-lg sm:rounded-xl px-1.5 sm:px-2.5 py-1 sm:py-1.5 text-[11px] sm:text-sm font-bold outline-none focus:border-amber-400 cursor-pointer">
                         <option v-for="y in availableYears" :value="y" :key="y">พ.ศ. {{ y + 543 }}</option>
                     </select>
                     <select v-model="periodFilter"
-                        class="bg-slate-800 text-white border border-slate-600 rounded-xl px-2.5 py-1.5 text-xs sm:text-sm font-semibold outline-none focus:border-amber-400 cursor-pointer">
+                        class="w-full sm:w-auto bg-slate-800 text-white border border-slate-600 rounded-lg sm:rounded-xl px-1.5 sm:px-2.5 py-1 sm:py-1.5 text-[11px] sm:text-sm font-semibold outline-none focus:border-amber-400 cursor-pointer">
                         <option value="all">ทั้งเดือน</option>
                         <option value="first-half">ครึ่งเดือนแรก (1-15)</option>
                         <option value="second-half">ครึ่งเดือนหลัง (16-สิ้นเดือน)</option>
                     </select>
                 </div>
 
-                <!-- 3. ปุ่มวันนี้ใครวิ่ง, บันทึกรูป PNG, สลับหน้าแดชบอร์ดสถิติ และ ปลดล็อกแอดมิน -->
-                <div class="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                <!-- 3. ปุ่มวันนี้ใครวิ่ง, บันทึกรูป PNG, สลับหน้าแดชบอร์ดสถิติ และ ปลดล็อกแอดมิน (จัดตารางพอดีแถวบนมือถือ) -->
+                <div class="grid sm:flex sm:flex-wrap items-center gap-1 sm:gap-2 w-full sm:w-auto"
+                    :class="activeView === 'poster' ? 'grid-cols-4' : 'grid-cols-3'">
                     <button @click="openTodaySummary"
-                        class="bg-gradient-to-r from-yellow-300 via-amber-400 to-orange-400 hover:from-yellow-200 hover:to-orange-300 text-slate-950 px-3 py-1.5 rounded-xl font-extrabold text-xs sm:text-sm shadow-md flex items-center gap-1.5 transition-all cursor-pointer border border-white/80">
-                        <i class="fa-solid fa-bolt text-orange-700"></i>
+                        class="bg-gradient-to-r from-yellow-300 via-amber-400 to-orange-400 hover:from-yellow-200 hover:to-orange-300 text-slate-950 px-1.5 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl font-extrabold text-[11px] sm:text-sm shadow-md flex items-center justify-center gap-1 sm:gap-1.5 transition-all cursor-pointer border border-white/80 whitespace-nowrap">
+                        <i class="fa-solid fa-bolt text-orange-700 text-[10px] sm:text-xs"></i>
                         <span>วันนี้ใครวิ่ง</span>
                     </button>
                     <button v-if="activeView === 'poster'" @click="exportPosterPng" :disabled="isExporting"
-                        class="bg-emerald-500 hover:bg-emerald-400 disabled:opacity-60 text-slate-950 px-3 py-1.5 rounded-xl font-extrabold text-xs sm:text-sm shadow flex items-center gap-1.5 transition-all cursor-pointer">
-                        <i :class="isExporting ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-image'"></i>
+                        class="bg-emerald-500 hover:bg-emerald-400 disabled:opacity-60 text-slate-950 px-1.5 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl font-extrabold text-[11px] sm:text-sm shadow flex items-center justify-center gap-1 sm:gap-1.5 transition-all cursor-pointer whitespace-nowrap">
+                        <i :class="isExporting ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-image'" class="text-[10px] sm:text-xs"></i>
                         <span>{{ isExporting ? 'กำลังสร้างรูป...' : 'บันทึกรูป PNG' }}</span>
                     </button>
                     <button @click="activeView = activeView === 'stats' ? 'poster' : 'stats'"
-                        class="px-3 py-1.5 rounded-xl font-extrabold text-xs sm:text-sm shadow flex items-center gap-1.5 transition-all cursor-pointer border"
+                        class="px-1.5 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl font-extrabold text-[11px] sm:text-sm shadow flex items-center justify-center gap-1 sm:gap-1.5 transition-all cursor-pointer border whitespace-nowrap"
                         :class="activeView === 'stats' ? 'bg-orange-500 hover:bg-orange-400 text-white border-amber-300' : 'bg-slate-800 hover:bg-slate-700 text-amber-300 border-amber-400/60'">
-                        <i :class="activeView === 'stats' ? 'fa-solid fa-calendar-days' : 'fa-solid fa-chart-simple'"></i>
+                        <i :class="activeView === 'stats' ? 'fa-solid fa-calendar-days' : 'fa-solid fa-chart-simple'" class="text-[10px] sm:text-xs"></i>
                         <span>{{ activeView === 'stats' ? 'กลับหน้าตารางเวร' : 'สถิติเวร' }}</span>
                     </button>
                     <button v-if="!adminMode" @click="openAdminModal"
-                        class="bg-amber-400 hover:bg-amber-300 text-slate-950 px-3 py-1.5 rounded-xl font-extrabold text-xs sm:text-sm shadow flex items-center gap-1.5 transition-all cursor-pointer">
-                        <i class="fa-solid fa-lock"></i>
+                        class="bg-amber-400 hover:bg-amber-300 text-slate-950 px-1.5 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl font-extrabold text-[11px] sm:text-sm shadow flex items-center justify-center gap-1 sm:gap-1.5 transition-all cursor-pointer whitespace-nowrap">
+                        <i class="fa-solid fa-lock text-[10px] sm:text-xs"></i>
                         <span>ปลดล็อกแอดมิน</span>
                     </button>
                     <button v-else @click="lockAdminScreen"
-                        class="bg-rose-600 hover:bg-rose-500 text-white px-3 py-1.5 rounded-xl font-extrabold text-xs sm:text-sm shadow flex items-center gap-1.5 transition-all cursor-pointer">
-                        <i class="fa-solid fa-shield-halved"></i>
+                        class="bg-rose-600 hover:bg-rose-500 text-white px-1.5 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl font-extrabold text-[11px] sm:text-sm shadow flex items-center justify-center gap-1 sm:gap-1.5 transition-all cursor-pointer whitespace-nowrap">
+                        <i class="fa-solid fa-shield-halved text-[10px] sm:text-xs"></i>
                         <span>โหมดแอดมิน (ล็อก)</span>
                     </button>
                 </div>
             </div>
 
             <!-- ==================== ADMIN TOOLBAR (แสดงเมื่อปลดล็อกแอดมินแล้ว) ==================== -->
-            <div v-if="adminMode" class="bg-slate-800 border-t border-slate-700 px-3 py-2.5">
-                <div class="max-w-5xl mx-auto flex flex-wrap items-center justify-between gap-2.5">
-                    <div class="flex items-center gap-1.5 text-xs font-bold text-emerald-400">
+            <div v-if="adminMode" class="bg-slate-800 border-t border-slate-700 px-2 sm:px-3 py-1.5 sm:py-2.5">
+                <div class="max-w-5xl mx-auto flex flex-col sm:flex-row sm:flex-wrap sm:items-center sm:justify-between gap-1.5 sm:gap-2.5">
+                    <div class="hidden sm:flex items-center gap-1.5 text-xs font-bold text-emerald-400">
                         <i class="fa-solid fa-pen-to-square"></i>
                         <span>จัดเวร แดชบอร์ดสถิติ หรือสุ่มเกลี่ยตารางทั้งเดือนแบบยุติธรรมได้จากแถบเครื่องมือนี้</span>
                     </div>
-                    <div class="flex flex-wrap items-center gap-1.5">
+                    <div class="flex flex-wrap items-center gap-1 sm:gap-1.5">
                         <!-- ตัวเลือกตั้งไรเดอร์กะกลางคืนประจำเดือน (แสดงเฉพาะเมื่ออยู่ในโหมดกะกลางคืน) -->
-                        <div v-if="shiftType === 'night'" class="flex items-center gap-1.5 bg-indigo-950 border border-indigo-400/60 px-2.5 py-1 rounded-xl">
-                            <span class="text-[11px] font-bold text-indigo-200">🌙 คนวิ่งประจำ:</span>
+                        <div v-if="shiftType === 'night'" class="flex items-center gap-1 bg-indigo-950 border border-indigo-400/60 px-2 py-0.5 sm:py-1 rounded-lg sm:rounded-xl">
+                            <span class="text-[10px] sm:text-[11px] font-bold text-indigo-200">🌙 คนวิ่งประจำ:</span>
                             <select v-model="defaultNightRider" @change="applyDefaultNightRiderToMonth"
-                                class="bg-indigo-900 text-amber-300 border border-indigo-500 rounded-lg px-2 py-0.5 text-xs font-extrabold outline-none cursor-pointer">
+                                class="bg-indigo-900 text-amber-300 border border-indigo-500 rounded-md sm:rounded-lg px-1.5 py-0.5 text-[11px] sm:text-xs font-extrabold outline-none cursor-pointer">
                                 <option v-for="r in riders" :key="r.id" :value="r.name">{{ r.name }} {{ r.heart }}</option>
                             </select>
                         </div>
                         <button @click="autoBalanceShifts"
-                            class="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-md cursor-pointer"
+                            class="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-bold flex items-center gap-1 shadow-md cursor-pointer whitespace-nowrap"
                             title="สุ่มเกลี่ยจำนวนเวรให้ทุกคนเท่ากันอย่างยุติธรรม">
-                            <i class="fa-solid fa-wand-magic-sparkles"></i> สุ่มเกลี่ยเวรอัตโนมัติ
+                            <i class="fa-solid fa-wand-magic-sparkles text-[10px] sm:text-xs"></i> สุ่มเกลี่ยเวรอัตโนมัติ
                         </button>
                         <button @click="copyPreviousMonthSchedule"
-                            class="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-md cursor-pointer"
+                            class="bg-indigo-600 hover:bg-indigo-500 text-white px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-bold flex items-center gap-1 shadow-md cursor-pointer whitespace-nowrap"
                             title="คัดลอกรูปแบบการจัดเวรของเดือนก่อนหน้ามาใช้งาน">
-                            <i class="fa-solid fa-copy"></i> คัดลอกตารางเดือนก่อน
+                            <i class="fa-solid fa-copy text-[10px] sm:text-xs"></i> คัดลอกตารางเดือนก่อน
                         </button>
                         <button @click="openRiderManager"
-                            class="bg-blue-600 hover:bg-blue-500 text-white px-2.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow cursor-pointer">
-                            <i class="fa-solid fa-helmet-safety"></i> จัดการไรเดอร์
+                            class="bg-blue-600 hover:bg-blue-500 text-white px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-bold flex items-center gap-1 shadow cursor-pointer whitespace-nowrap">
+                            <i class="fa-solid fa-helmet-safety text-[10px] sm:text-xs"></i> จัดการไรเดอร์
                         </button>
                         <button @click="openHolidayManager"
-                            class="bg-purple-600 hover:bg-purple-500 text-white px-2.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow cursor-pointer">
-                            <i class="fa-solid fa-calendar-xmark"></i> วันหยุด ({{ monthlyHolidays.join(', ') || 'ไม่มี' }})
+                            class="bg-purple-600 hover:bg-purple-500 text-white px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-bold flex items-center gap-1 shadow cursor-pointer whitespace-nowrap">
+                            <i class="fa-solid fa-calendar-xmark text-[10px] sm:text-xs"></i> วันหยุด ({{ monthlyHolidays.join(', ') || 'ไม่มี' }})
                         </button>
                         <button @click="openEmergencyModal"
-                            class="bg-red-600 hover:bg-red-50 text-white px-2.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow cursor-pointer">
-                            <i class="fa-solid fa-triangle-exclamation"></i> ปิดระบบฉุกเฉิน
+                            class="bg-red-600 hover:bg-red-50 text-white px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-bold flex items-center gap-1 shadow cursor-pointer whitespace-nowrap">
+                            <i class="fa-solid fa-triangle-exclamation text-[10px] sm:text-xs"></i> ปิดระบบฉุกเฉิน
                         </button>
                         <button @click="openBackupModal"
-                            class="bg-slate-700 hover:bg-slate-600 text-amber-300 px-2.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow cursor-pointer"
+                            class="bg-slate-700 hover:bg-slate-600 text-amber-300 px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-bold flex items-center gap-1 shadow cursor-pointer whitespace-nowrap"
                             title="สำรองข้อมูลเป็นไฟล์ JSON หรือกู้คืนตาราง">
-                            <i class="fa-solid fa-file-export"></i> สำรอง/กู้คืนข้อมูล
+                            <i class="fa-solid fa-file-export text-[10px] sm:text-xs"></i> สำรอง/กู้คืนข้อมูล
                         </button>
                         <button @click="openChangePasswordModal"
-                            class="bg-amber-500 hover:bg-amber-400 text-slate-950 px-2.5 py-1.5 rounded-xl text-xs font-extrabold flex items-center gap-1.5 shadow cursor-pointer">
-                            <i class="fa-solid fa-key"></i> เปลี่ยนรหัส
+                            class="bg-amber-500 hover:bg-amber-400 text-slate-950 px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-extrabold flex items-center gap-1 shadow cursor-pointer whitespace-nowrap">
+                            <i class="fa-solid fa-key text-[10px] sm:text-xs"></i> เปลี่ยนรหัส
                         </button>
                         <button @click="showSqlModal = true"
-                            class="bg-teal-600 hover:bg-teal-500 text-white px-2.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow cursor-pointer">
-                            <i class="fa-solid fa-database"></i> ตั้งค่า SQL
+                            class="bg-teal-600 hover:bg-teal-500 text-white px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-bold flex items-center gap-1 shadow cursor-pointer whitespace-nowrap">
+                            <i class="fa-solid fa-database text-[10px] sm:text-xs"></i> ตั้งค่า SQL
                         </button>
                     </div>
                 </div>
