@@ -428,17 +428,29 @@
                         </div>
 
                         <!-- หัวข้อใหญ่ 'ตารางวิ่งงานกลางวัน / ตารางวิ่งงานกลางคืน' + ป้ายช่วงวันที่ -->
-                        <div class="flex-grow text-center px-1 py-2">
-                            <h1 class="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight leading-tight"
+                        <div class="flex-grow flex flex-col items-center justify-center text-center px-1 py-2">
+                            <h1 class="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight leading-normal"
                                 :class="shiftType === 'night' ? 'title-sticker-night' : 'title-sticker'">
                                 {{ shiftType === 'night' ? '🌙 ตารางวิ่งงานกลางคืน' : 'ตารางวิ่งงานกลางวัน' }}
                             </h1>
                             
-                            <div class="mt-2.5 inline-flex items-center justify-center gap-2 text-white px-5 sm:px-7 py-1.5 sm:py-2 rounded-full shadow-lg border-2"
-                                :class="shiftType === 'night' ? 'bg-indigo-950 border-amber-300/90' : 'bg-[#0F172A] border-white/85'">
-                                <span class="font-display font-extrabold text-base sm:text-xl tracking-wide select-none">
-                                    {{ posterDateRangeLabel }}
-                                </span>
+                            <!-- ป้ายแสดงช่วงวันที่ เดือน และ พ.ศ. วาดด้วย SVG เพื่อให้ติดในรูป PNG คมชัด 100% ไม่เพี้ยน -->
+                            <div id="poster-date-badge" class="mt-2 flex items-center justify-center">
+                                <svg viewBox="0 0 380 48" class="w-[260px] sm:w-[320px] h-auto drop-shadow-md overflow-visible">
+                                    <rect x="3" y="3" width="374" height="42" rx="21"
+                                        :fill="shiftType === 'night' ? '#1E1B4B' : '#0F172A'"
+                                        :stroke="shiftType === 'night' ? '#FCD34D' : '#FFFFFF'"
+                                        stroke-width="3"/>
+                                    <text x="190" y="25"
+                                        text-anchor="middle"
+                                        dominant-baseline="central"
+                                        fill="#FFFFFF"
+                                        font-family="Kanit, Prompt, sans-serif"
+                                        font-weight="800"
+                                        font-size="21">
+                                        {{ posterDateRangeLabel }}
+                                    </text>
+                                </svg>
                             </div>
                         </div>
 
