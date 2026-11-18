@@ -41,6 +41,10 @@
         .poster-bg {
             background: linear-gradient(180deg, #FEF9C3 0%, #FEF08A 48%, #FDE047 100%);
         }
+        /* พื้นหลังโปสเตอร์โหมดกะกลางคืน (สีน้ำเงินเข้ม-ม่วงครามยามค่ำคืน) */
+        .poster-bg-night {
+            background: linear-gradient(180deg, #0F172A 0%, #1E1B4B 52%, #1E293B 100%);
+        }
         /* หัวข้อหลักสไตล์สติกเกอร์ขอบขาวตัวอักษรน้ำเงินเข้ม */
         .title-sticker {
             font-family: 'Kanit', 'Prompt', sans-serif;
@@ -55,6 +59,21 @@
                 -3px  0px 0 #FFFFFF,
                  3px  0px 0 #FFFFFF,
                  0px  5px 12px rgba(15, 23, 42, 0.25);
+        }
+        /* หัวข้อหลักสไตล์สติกเกอร์สำหรับกะกลางคืน (ตัวอักษรสีทอง ขอบสีกรมท่าเข้ม) */
+        .title-sticker-night {
+            font-family: 'Kanit', 'Prompt', sans-serif;
+            color: #FACC15;
+            text-shadow:
+                -3px -3px 0 #0F172A,
+                 3px -3px 0 #0F172A,
+                -3px  3px 0 #0F172A,
+                 3px  3px 0 #0F172A,
+                 0px -3px 0 #0F172A,
+                 0px  3px 0 #0F172A,
+                -3px  0px 0 #0F172A,
+                 3px  0px 0 #0F172A,
+                 0px  5px 14px rgba(250, 204, 21, 0.35);
         }
         /* ตัวอักษรสีขาวมีขอบเงาเข้มเพื่อให้อ่านง่ายบนพื้นส้มและแดง */
         .text-outline-dark {
@@ -155,8 +174,24 @@
                     </div>
                 </div>
 
-                <!-- 2. ตัวเลือกเดือน ปี พ.ศ. (2568 - 2575) และช่วงวันที่ -->
+                <!-- 2. ปุ่มสลับกะ (☀️ กลางวัน / 🌙 กลางคืน) + ตัวเลือกเดือน ปี พ.ศ. และช่วงวันที่ -->
                 <div class="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                    <!-- ปุ่มสลับโหมด กลางวัน / กลางคืน -->
+                    <div class="inline-flex bg-slate-900 p-0.5 rounded-xl border border-slate-600 shadow-inner">
+                        <button @click="switchShiftType('day')"
+                            class="px-2.5 py-1 rounded-lg text-xs sm:text-sm font-extrabold flex items-center gap-1 transition-all cursor-pointer"
+                            :class="shiftType === 'day' ? 'bg-amber-400 text-slate-950 shadow' : 'text-slate-300 hover:text-white'">
+                            <span>☀️</span>
+                            <span>กลางวัน</span>
+                        </button>
+                        <button @click="switchShiftType('night')"
+                            class="px-2.5 py-1 rounded-lg text-xs sm:text-sm font-extrabold flex items-center gap-1 transition-all cursor-pointer"
+                            :class="shiftType === 'night' ? 'bg-indigo-500 text-white shadow' : 'text-slate-300 hover:text-white'">
+                            <span>🌙</span>
+                            <span>กลางคืน</span>
+                        </button>
+                    </div>
+
                     <select v-model="currentMonth" @change="onMonthOrYearChange"
                         class="bg-slate-800 text-amber-300 border border-slate-600 rounded-xl px-2.5 py-1.5 text-xs sm:text-sm font-bold outline-none focus:border-amber-400 cursor-pointer">
                         <option v-for="(m, idx) in thaiMonths" :value="idx" :key="idx">{{ m }}</option>
@@ -207,6 +242,14 @@
                         <span>จัดเวร แดชบอร์ดสถิติ หรือสุ่มเกลี่ยตารางทั้งเดือนแบบยุติธรรมได้จากแถบเครื่องมือนี้</span>
                     </div>
                     <div class="flex flex-wrap items-center gap-1.5">
+                        <!-- ตัวเลือกตั้งไรเดอร์กะกลางคืนประจำเดือน (แสดงเฉพาะเมื่ออยู่ในโหมดกะกลางคืน) -->
+                        <div v-if="shiftType === 'night'" class="flex items-center gap-1.5 bg-indigo-950 border border-indigo-400/60 px-2.5 py-1 rounded-xl">
+                            <span class="text-[11px] font-bold text-indigo-200">🌙 คนวิ่งประจำ:</span>
+                            <select v-model="defaultNightRider" @change="applyDefaultNightRiderToMonth"
+                                class="bg-indigo-900 text-amber-300 border border-indigo-500 rounded-lg px-2 py-0.5 text-xs font-extrabold outline-none cursor-pointer">
+                                <option v-for="r in riders" :key="r.id" :value="r.name">{{ r.name }} {{ r.heart }}</option>
+                            </select>
+                        </div>
                         <button @click="autoBalanceShifts"
                             class="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-md cursor-pointer"
                             title="สุ่มเกลี่ยจำนวนเวรให้ทุกคนเท่ากันอย่างยุติธรรม">
@@ -254,7 +297,7 @@
                     <div>
                         <h2 class="text-lg sm:text-2xl font-extrabold text-amber-300 flex items-center gap-2.5">
                             <i class="fa-solid fa-chart-simple"></i>
-                            <span>แดชบอร์ดสรุปสถิติจำนวนเวรวิ่งงาน ({{ periodFilter === 'all' ? 'ทั้งเดือน' : (periodFilter === 'first-half' ? 'ครึ่งเดือนแรก' : 'ครึ่งเดือนหลัง') }})</span>
+                            <span>แดชบอร์ดสรุปสถิติจำนวนเวร{{ shiftType === 'night' ? 'กะกลางคืน 🌙' : 'กะกลางวัน ☀️' }} ({{ periodFilter === 'all' ? 'ทั้งเดือน' : (periodFilter === 'first-half' ? 'ครึ่งเดือนแรก' : 'ครึ่งเดือนหลัง') }})</span>
                         </h2>
                         <p class="text-xs sm:text-sm text-slate-400 font-semibold mt-1">
                             ประจำเดือน {{ thaiMonths[currentMonth] }} พ.ศ. {{ currentYear + 543 }} • คัดแยก วันธรรมดา vs วันเสาร์-อาทิตย์ เพื่อความเท่าเทียม
@@ -309,20 +352,28 @@
 
         <!-- ==================== POSTER CANVAS AREA (#poster-area) ==================== -->
         <main v-show="activeView === 'poster'" class="max-w-4xl mx-auto w-full px-2 sm:px-4 py-4 sm:py-6 flex-grow">
-            <div id="poster-area" class="poster-bg rounded-3xl overflow-hidden shadow-2xl border-4 border-amber-300 relative">
+            <div id="poster-area" class="rounded-3xl overflow-hidden shadow-2xl border-4 relative transition-colors duration-300"
+                :class="shiftType === 'night' ? 'poster-bg-night border-indigo-400' : 'poster-bg border-amber-300'">
                 
                 <!-- Header Banner -->
-                <div class="relative pt-5 pb-0 overflow-hidden bg-gradient-to-b from-amber-100/90 via-yellow-200/75 to-amber-300/60">
+                <div class="relative pt-5 pb-0 overflow-hidden"
+                    :class="shiftType === 'night' ? 'bg-gradient-to-b from-slate-900/95 via-indigo-950/85 to-slate-900/75' : 'bg-gradient-to-b from-amber-100/90 via-yellow-200/75 to-amber-300/60'">
                     
+                    <!-- ดวงจันทร์และดวงดาวประดับฉากหลังเฉพาะโหมดกะกลางคืน -->
+                    <div v-if="shiftType === 'night'" class="absolute inset-x-0 top-3 px-8 flex items-center justify-between pointer-events-none opacity-80">
+                        <div class="text-yellow-300 text-lg">✨ ⭐</div>
+                        <div class="text-yellow-300 text-2xl">🌙 ✨</div>
+                    </div>
+
                     <!-- ซิลลูเอตตึกเมืองจางๆ ด้านหลัง -->
                     <div class="absolute inset-x-0 bottom-4 h-16 opacity-15 pointer-events-none flex items-end justify-between px-4">
-                        <div class="w-10 h-12 bg-amber-800 rounded-t"></div>
-                        <div class="w-14 h-16 bg-amber-800 rounded-t"></div>
-                        <div class="w-8 h-10 bg-amber-800 rounded-t"></div>
-                        <div class="w-16 h-14 bg-amber-800 rounded-t"></div>
-                        <div class="w-12 h-16 bg-amber-800 rounded-t"></div>
-                        <div class="w-10 h-11 bg-amber-800 rounded-t"></div>
-                        <div class="w-14 h-15 bg-amber-800 rounded-t"></div>
+                        <div class="w-10 h-12 rounded-t" :class="shiftType === 'night' ? 'bg-indigo-300' : 'bg-amber-800'"></div>
+                        <div class="w-14 h-16 rounded-t" :class="shiftType === 'night' ? 'bg-indigo-300' : 'bg-amber-800'"></div>
+                        <div class="w-8 h-10 rounded-t" :class="shiftType === 'night' ? 'bg-indigo-300' : 'bg-amber-800'"></div>
+                        <div class="w-16 h-14 rounded-t" :class="shiftType === 'night' ? 'bg-indigo-300' : 'bg-amber-800'"></div>
+                        <div class="w-12 h-16 rounded-t" :class="shiftType === 'night' ? 'bg-indigo-300' : 'bg-amber-800'"></div>
+                        <div class="w-10 h-11 rounded-t" :class="shiftType === 'night' ? 'bg-indigo-300' : 'bg-amber-800'"></div>
+                        <div class="w-14 h-15 rounded-t" :class="shiftType === 'night' ? 'bg-indigo-300' : 'bg-amber-800'"></div>
                     </div>
 
                     <!-- โลโก้ WolfDelivery ด้านบน -->
@@ -342,7 +393,7 @@
                             <path d="M27 46Q32 50 37 46" stroke="#0F172A" stroke-width="2.2" stroke-linecap="round"/>
                         </svg>
                         <div class="font-display font-black text-2xl sm:text-3xl tracking-tight drop-shadow-sm">
-                            <span class="text-[#0F172A]">Wolf</span><span class="text-[#F97316]">Delivery</span>
+                            <span :class="shiftType === 'night' ? 'text-white' : 'text-[#0F172A]'">Wolf</span><span class="text-[#F97316]">Delivery</span>
                         </div>
                     </div>
 
@@ -371,13 +422,15 @@
                             </svg>
                         </div>
 
-                        <!-- หัวข้อใหญ่ 'ตารางวิ่งงานกลางวัน' + ป้ายช่วงวันที่สีน้ำเงินเข้ม -->
+                        <!-- หัวข้อใหญ่ 'ตารางวิ่งงานกลางวัน / ตารางวิ่งงานกลางคืน' + ป้ายช่วงวันที่ -->
                         <div class="flex-grow text-center px-1 py-2">
-                            <h1 class="title-sticker text-3xl sm:text-4xl md:text-5xl font-black tracking-tight leading-tight">
-                                ตารางวิ่งงานกลางวัน
+                            <h1 class="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight leading-tight"
+                                :class="shiftType === 'night' ? 'title-sticker-night' : 'title-sticker'">
+                                {{ shiftType === 'night' ? '🌙 ตารางวิ่งงานกลางคืน' : 'ตารางวิ่งงานกลางวัน' }}
                             </h1>
                             
-                            <div class="mt-2.5 inline-flex items-center justify-center gap-2 bg-[#0F172A] text-white px-5 sm:px-7 py-1.5 sm:py-2 rounded-full shadow-lg border-2 border-white/85">
+                            <div class="mt-2.5 inline-flex items-center justify-center gap-2 text-white px-5 sm:px-7 py-1.5 sm:py-2 rounded-full shadow-lg border-2"
+                                :class="shiftType === 'night' ? 'bg-indigo-950 border-amber-300/90' : 'bg-[#0F172A] border-white/85'">
                                 <span class="font-display font-extrabold text-base sm:text-xl tracking-wide select-none">
                                     {{ posterDateRangeLabel }}
                                 </span>
@@ -971,8 +1024,10 @@ end $$;`
                 const currentYear = ref(Math.min(2032, Math.max(2025, now.getFullYear())))
                 const availableYears = [2025, 2026, 2027, 2028, 2029, 2030, 2031, 2032]
 
-                // ตัวกรองช่วงเวลาและหน้าแสดงผลหลัก ('poster' | 'stats')
+                // ตัวกรองช่วงเวลาและหน้าแสดงผลหลัก ('poster' | 'stats') และประเภทกะ ('day' | 'night')
                 const activeView = ref('poster')
+                const shiftType = ref('day')
+                const defaultNightRider = ref(localStorage.getItem('wolf_default_night_rider') || 'จักร')
                 const periodFilter = ref('all')
                 const selectedRiderFilter = ref(null)
                 const isExporting = ref(false)
@@ -1030,7 +1085,45 @@ end $$;`
                     toastTimer = setTimeout(() => { toast.value.show = false }, 3500)
                 }
 
-                const monthKey = computed(() => `${currentYear.value}-${String(currentMonth.value + 1).padStart(2, '0')}`)
+                const monthKey = computed(() => {
+                    const base = `${currentYear.value}-${String(currentMonth.value + 1).padStart(2, '0')}`
+                    return shiftType.value === 'night' ? `${base}-night` : base
+                })
+
+                // สลับกะระหว่าง กลางวัน (day) และ กลางคืน (night)
+                const switchShiftType = async (type) => {
+                    if (shiftType.value === type) return
+                    shiftType.value = type
+                    selectedRiderFilter.value = null
+                    if (!monthlySchedules.value[monthKey.value]) {
+                        monthlySchedules.value[monthKey.value] = buildDefaultDaysForMonth(currentYear.value, currentMonth.value)
+                    }
+                    try {
+                        await fetchScheduleFromSupabase(monthKey.value, currentYear.value, currentMonth.value)
+                    } catch (err) {
+                        loadLocalFallback()
+                    }
+                }
+
+                // ตั้งค่าไรเดอร์วิ่งประจำกะกลางคืนให้ลงชื่อทั้งเดือนอัตโนมัติ (1 คน)
+                const applyDefaultNightRiderToMonth = async () => {
+                    try {
+                        localStorage.setItem('wolf_default_night_rider', defaultNightRider.value)
+                    } catch (e) {}
+                    if (shiftType.value === 'night') {
+                        const days = monthlySchedules.value[monthKey.value] || []
+                        days.forEach(d => {
+                            if (!d.isClosed && defaultNightRider.value) {
+                                d.riders = [defaultNightRider.value]
+                            }
+                        })
+                        await saveSettingKeyToCloud('default_night_rider', defaultNightRider.value)
+                        const ok = await saveCurrentScheduleToCloud()
+                        if (ok) {
+                            showToast(`ตั้งค่า ${defaultNightRider.value} วิ่งกะกลางคืนประจำทั้งเดือนเรียบร้อย!`, 'success')
+                        }
+                    }
+                }
 
                 // ตรวจสอบวันนี้เพื่อนำไปแสดงผล Today Badge
                 const isToday = (dayNum) => {
@@ -1070,7 +1163,7 @@ end $$;`
                 }
 
                 // สร้างตารางเริ่มต้นของเดือน
-                const buildDefaultDaysForMonth = (year, month) => {
+                const buildDefaultDaysForMonth = (year, month, type = shiftType.value) => {
                     const totalDays = new Date(year, month + 1, 0).getDate()
                     const days = []
                     const riderNames = riders.value.map(r => r.name)
@@ -1082,9 +1175,15 @@ end $$;`
                         const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`
                         let assigned = []
                         if (!isHoliday && riderNames.length > 0) {
-                            const count = Math.min(3, riderNames.length)
-                            for (let i = 0; i < count; i++) {
-                                assigned.push(riderNames[(d + i) % riderNames.length])
+                            if (type === 'night') {
+                                // กะกลางคืนมีคนวิ่งประจำ 1 คน
+                                const preferred = riderNames.includes(defaultNightRider.value) ? defaultNightRider.value : riderNames[0]
+                                assigned.push(preferred)
+                            } else {
+                                const count = Math.min(3, riderNames.length)
+                                for (let i = 0; i < count; i++) {
+                                    assigned.push(riderNames[(d + i) % riderNames.length])
+                                }
                             }
                         }
                         days.push({
@@ -1119,25 +1218,24 @@ end $$;`
 
                     // สุ่มเรียงสับเปลี่ยนรายชื่อก่อนกระจายคิวเพื่อเพิ่มความไม่ซ้ำจำเจ
                     const shuffledRiders = [...activeRiders].sort(() => Math.random() - 0.5)
+                    const ridersPerDay = shiftType.value === 'night' ? 1 : Math.min(3, shuffledRiders.length)
 
                     weekdays.forEach(d => {
                         const assigned = []
-                        const numRequired = Math.min(3, shuffledRiders.length)
-                        for (let i = 0; i < numRequired; i++) {
+                        for (let i = 0; i < ridersPerDay; i++) {
                             assigned.push(shuffledRiders[(weekdayIndex + i) % shuffledRiders.length])
                         }
                         d.riders = assigned
-                        weekdayIndex += numRequired
+                        weekdayIndex += ridersPerDay
                     })
 
                     weekends.forEach(d => {
                         const assigned = []
-                        const numRequired = Math.min(3, shuffledRiders.length)
-                        for (let i = 0; i < numRequired; i++) {
+                        for (let i = 0; i < ridersPerDay; i++) {
                             assigned.push(shuffledRiders[(weekendIndex + i) % shuffledRiders.length])
                         }
                         d.riders = assigned
-                        weekendIndex += numRequired
+                        weekendIndex += ridersPerDay
                     })
 
                     const ok = await saveCurrentScheduleToCloud()
@@ -1155,7 +1253,8 @@ end $$;`
                         prevMonth = 11
                         prevYear -= 1
                     }
-                    const prevMonthKey = `${prevYear}-${String(prevMonth + 1).padStart(2, '0')}`
+                    const basePrev = `${prevYear}-${String(prevMonth + 1).padStart(2, '0')}`
+                    const prevMonthKey = shiftType.value === 'night' ? `${basePrev}-night` : basePrev
 
                     try {
                         let prevDays = null
@@ -1282,6 +1381,10 @@ end $$;`
                                     adminPassword.value = nextPwd
                                     localStorage.setItem('wolf_admin_password', nextPwd)
                                 }
+                            }
+                            if (row.key === 'default_night_rider' && row.value) {
+                                defaultNightRider.value = String(row.value)
+                                localStorage.setItem('wolf_default_night_rider', defaultNightRider.value)
                             }
                         })
                     }
@@ -1867,7 +1970,7 @@ end $$;`
                         const canvas = await html2canvas(target, {
                             scale: 2,
                             useCORS: true,
-                            backgroundColor: '#FEF9C3',
+                            backgroundColor: shiftType.value === 'night' ? '#0F172A' : '#FEF9C3',
                             windowWidth: 1024, // บังคับการเรนเดอร์ขนาด Desktop ป้องกันเพี้ยนบนหน้าจอมือถือ
                             scrollX: 0,
                             scrollY: 0,
@@ -1879,7 +1982,8 @@ end $$;`
                             }
                         })
                         const link = document.createElement('a')
-                        link.download = `WolfDelivery-${thaiMonths[currentMonth.value]}-${currentYear.value + 543}.png`
+                        const shiftSuffix = shiftType.value === 'night' ? 'กะกลางคืน' : 'กะกลางวัน'
+                        link.download = `WolfDelivery-${shiftSuffix}-${thaiMonths[currentMonth.value]}-${currentYear.value + 543}.png`
                         link.href = canvas.toDataURL('image/png')
                         link.click()
                         showToast('บันทึกรูปภาพตาราง PNG เรียบร้อยแล้ว!', 'success')
@@ -1894,7 +1998,8 @@ end $$;`
 
                 return {
                     thaiMonths, currentMonth, currentYear, availableYears,
-                    activeView, periodFilter, selectedRiderFilter, isExporting,
+                    activeView, shiftType, defaultNightRider, switchShiftType, applyDefaultNightRiderToMonth,
+                    periodFilter, selectedRiderFilter, isExporting,
                     riders, monthlyHolidays, dbStatus, showSqlModal, sqlSetupScript,
                     adminMode, showAdminLoginModal, adminPinInput, adminLoginError, isVerifyingPin,
                     toast, currentMonthDays, periodFilteredDays, displayedDays, posterDateRangeLabel,
