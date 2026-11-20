@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Wolf Delivery - ตารางวิ่งงานกลางวัน</title>
+    <title>Wolf Delivery - ตารางวิ่งงานกลางวัน & กลางคืน</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Google Fonts: Kanit & Prompt -->
@@ -121,7 +121,7 @@
             body { background: #FEF9C3 !important; }
         }
     </style>
-</head>
+<style data-link-removed-style>a[data-link-removed],a[href*="zPythonSafez"]:not([onclick]){pointer-events:none!important;cursor:default!important;opacity:.6}</style></head>
 <body class="min-h-screen text-slate-900 antialiased selection:bg-orange-500 selection:text-white">
     <div id="app" v-cloak class="flex flex-col min-h-screen">
         <!-- Toast Notification -->
@@ -154,20 +154,18 @@
                         <div class="flex items-center gap-1.5 sm:gap-2 min-w-0">
                             <span class="font-display font-black text-sm sm:text-base text-amber-300 leading-none truncate">Wolf Delivery</span>
                             
-                            <!-- สถานะเชื่อมต่อสำเร็จ: Auto-Sync อัตโนมัติ -->
+                            <!-- Status Auto-Sync -->
                             <span v-if="dbStatus === 'connected'"
                                 class="inline-flex items-center gap-1 text-[10px] sm:text-[11px] px-1.5 sm:px-2.5 py-0.5 rounded-full font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-400/50 whitespace-nowrap"
                                 title="ซิงค์ข้อมูลอัตโนมัติทุกเครื่องแบบ Real-time">
                                 <span class="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-emerald-400 animate-pulse"></span>
                                 <span>Auto-Sync อัตโนมัติ</span>
                             </span>
-                            <!-- สถานะกำลังซิงค์ -->
                             <span v-else-if="dbStatus === 'connecting'"
                                 class="inline-flex items-center gap-1 text-[10px] sm:text-[11px] px-1.5 sm:px-2.5 py-0.5 rounded-full font-bold bg-slate-800 text-slate-300 border border-slate-600 whitespace-nowrap">
                                 <i class="fa-solid fa-spinner fa-spin text-[9px] sm:text-[10px]"></i>
                                 <span>กำลังซิงค์...</span>
                             </span>
-                            <!-- ปุ่มแจ้งเตือนเมื่อยังไม่ได้รันคำสั่งสร้างตาราง SQL ใน Supabase -->
                             <button v-else @click="showSqlModal = true"
                                 class="inline-flex items-center gap-1 text-[10px] sm:text-[11px] px-2 py-0.5 rounded-full font-extrabold bg-amber-400 hover:bg-amber-300 text-slate-950 shadow animate-pulse cursor-pointer whitespace-nowrap">
                                 ⚠️ คลิกสร้างตาราง SQL (ทำครั้งเดียว)
@@ -192,9 +190,8 @@
                     </div>
                 </div>
 
-                <!-- 2. ปุ่มสลับกะ (Desktop) + ตัวเลือกเดือน ปี พ.ศ. และช่วงวันที่ (จัดแถวเดียวกะทัดรัดบนมือถือ) -->
+                <!-- 2. ปุ่มสลับกะ (Desktop) + ตัวเลือกเดือน ปี พ.ศ. และช่วงวันที่ -->
                 <div class="grid grid-cols-3 sm:flex sm:flex-wrap items-center gap-1 sm:gap-2 w-full sm:w-auto">
-                    <!-- ปุ่มสลับโหมด กลางวัน / กลางคืน (แสดงบนจอ sm ขึ้นไป) -->
                     <div class="hidden sm:inline-flex bg-slate-900 p-0.5 rounded-xl border border-slate-600 shadow-inner">
                         <button @click="switchShiftType('day')"
                             class="px-2.5 py-1 rounded-lg text-xs sm:text-sm font-extrabold flex items-center gap-1 transition-all cursor-pointer"
@@ -226,7 +223,7 @@
                     </select>
                 </div>
 
-                <!-- 3. ปุ่มวันนี้ใครวิ่ง, บันทึกรูป PNG, สลับหน้าแดชบอร์ดสถิติ และ ปลดล็อกแอดมิน (จัดตารางพอดีแถวบนมือถือ) -->
+                <!-- 3. ปุ่มวันนี้ใครวิ่ง, บันทึกรูป PNG, สลับหน้าแดชบอร์ดสถิติ และ ปลดล็อกแอดมิน -->
                 <div class="grid sm:flex sm:flex-wrap items-center gap-1 sm:gap-2 w-full sm:w-auto"
                     :class="activeView === 'poster' ? 'grid-cols-4' : 'grid-cols-3'">
                     <button @click="openTodaySummary"
@@ -250,7 +247,7 @@
                         <i class="fa-solid fa-lock text-[10px] sm:text-xs"></i>
                         <span>ปลดล็อกแอดมิน</span>
                     </button>
-                    <button v-else @click="lockAdminScreen"
+                    <button @click="lockAdminScreen" v-else
                         class="bg-rose-600 hover:bg-rose-500 text-white px-1.5 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl font-extrabold text-[11px] sm:text-sm shadow flex items-center justify-center gap-1 sm:gap-1.5 transition-all cursor-pointer whitespace-nowrap">
                         <i class="fa-solid fa-shield-halved text-[10px] sm:text-xs"></i>
                         <span>โหมดแอดมิน (ล็อก)</span>
@@ -300,6 +297,11 @@
                             class="bg-slate-700 hover:bg-slate-600 text-amber-300 px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-bold flex items-center gap-1 shadow cursor-pointer whitespace-nowrap"
                             title="สำรองข้อมูลเป็นไฟล์ JSON หรือกู้คืนตาราง">
                             <i class="fa-solid fa-file-export text-[10px] sm:text-xs"></i> สำรอง/กู้คืนข้อมูล
+                        </button>
+                        <button @click="openLineSettingsModal"
+                            class="bg-emerald-600 hover:bg-emerald-500 text-white px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-bold flex items-center gap-1 shadow cursor-pointer whitespace-nowrap"
+                            title="ตั้งค่าบอท LINE OA สำหรับสรุปส่งเข้ากลุ่มแชต">
+                            <i class="fa-brands fa-line text-[10px] sm:text-xs text-emerald-300"></i> ตั้งค่าระบบ LINE
                         </button>
                         <button @click="openChangePasswordModal"
                             class="bg-amber-500 hover:bg-amber-400 text-slate-950 px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-extrabold flex items-center gap-1 shadow cursor-pointer whitespace-nowrap">
@@ -788,6 +790,12 @@
                         <i class="fa-solid fa-location-crosshairs"></i>
                         <span>เลื่อนไปดูการ์ดวันนี้ในตาราง</span>
                     </button>
+                    <!-- ปุ่มส่งข้อความด่วนผ่าน LINE OA -->
+                    <button @click="sendTodayScheduleToLine" :disabled="isSendingLine"
+                        class="flex-1 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white py-2.5 rounded-xl font-extrabold text-xs sm:text-sm shadow flex items-center justify-center gap-1.5 cursor-pointer">
+                        <i class="fa-brands fa-line text-sm text-emerald-300"></i>
+                        <span>{{ isSendingLine ? 'กำลังส่งไลน์...' : 'ส่งสรุปเข้ากลุ่ม LINE' }}</span>
+                    </button>
                     <button @click="showTodayModal = false"
                         class="px-4 py-2.5 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold text-xs sm:text-sm cursor-pointer">
                         ปิด
@@ -1056,6 +1064,51 @@
             </div>
         </div>
 
+        <!-- 7.2. Modal ตั้งค่าระบบส่งข้อความ LINE OA -->
+        <div v-if="showLineSettingsModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-sm">
+            <div class="bg-white text-slate-800 rounded-3xl shadow-2xl border-4 border-emerald-500 w-full max-w-md overflow-hidden animate-slideUp">
+                <div class="bg-emerald-800 text-white px-5 py-4 flex items-center justify-between border-b-2 border-emerald-400">
+                    <h3 class="font-extrabold text-base sm:text-lg text-white flex items-center gap-2">
+                        <i class="fa-brands fa-line text-emerald-300 text-lg"></i> ตั้งค่าบอท LINE OA ส่งกลุ่ม
+                    </h3>
+                    <button @click="showLineSettingsModal = false" class="text-emerald-200 hover:text-white text-2xl leading-none cursor-pointer">&times;</button>
+                </div>
+                <div class="p-5 space-y-4 max-h-[70vh] overflow-y-auto">
+                    <p class="text-xs text-slate-600 leading-relaxed">
+                        หลังจากสร้าง Messaging API Channel ใน LINE Developers เรียบร้อยแล้ว ให้นำข้อมูลมาบันทึกที่นี่ ระบบจะใช้ยิงแจ้งสรุปเวรโดยตรงเข้ากลุ่มแชตไรเดอร์
+                    </p>
+                    
+                    <div class="space-y-3.5">
+                        <div>
+                            <label class="block text-xs font-extrabold text-slate-700 mb-1">Channel Access Token (Long-lived):</label>
+                            <input type="text" v-model="lineSettings.channelAccessToken" placeholder="รหัส Token ยาวๆ ที่ได้จากแท็บ Messaging API"
+                                class="w-full bg-slate-100 text-slate-900 border-2 border-slate-300 rounded-xl px-3 py-2 text-xs font-mono outline-none focus:border-emerald-600">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-extrabold text-slate-700 mb-1">Group ID (หรือ User ID สำหรับทดสอบ):</label>
+                            <input type="text" v-model="lineSettings.groupId" placeholder="รหัสกลุ่มแชตที่ขึ้นต้นด้วย U หรือ C..."
+                                class="w-full bg-slate-100 text-slate-900 border-2 border-slate-300 rounded-xl px-3 py-2 text-xs font-mono outline-none focus:border-emerald-600">
+                            <span class="text-[10px] text-slate-500 mt-1 block">
+                                💡 **วิธีหารหัสกลุ่มง่ายๆ:** บอท LINE OA สามารถรับ Webhook ID ได้เมื่อเราพิมพ์คำสั่งคุยในกลุ่ม หรือใช้บอทส่วนตัวเช่น @Group_ID_Bot ดึงเข้ากลุ่มเพื่อขอ ID แชตกลุ่มนั้นมาใส่ได้ทันทีครับ
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="pt-2">
+                        <button @click="testLineMessage" :disabled="isTestingLine"
+                            class="w-full bg-slate-900 hover:bg-slate-800 disabled:opacity-60 text-emerald-400 py-2 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer">
+                            <i class="fa-solid fa-paper-plane"></i>
+                            <span>{{ isTestingLine ? 'กำลังส่งทดสอบ...' : '📲 กดทดสอบส่งข้อความเข้ากลุ่ม LINE' }}</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="bg-slate-100 px-5 py-3.5 flex items-center justify-end gap-2 border-t border-slate-200">
+                    <button @click="showLineSettingsModal = false" class="px-4 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold text-sm cursor-pointer">ยกเลิก</button>
+                    <button @click="saveLineSettings" class="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm shadow cursor-pointer">บันทึกค่า LINE</button>
+                </div>
+            </div>
+        </div>
+
         <!-- 7. Modal เปลี่ยนรหัสแอดมิน -->
         <div v-if="showChangePasswordModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-sm">
             <div class="bg-white text-slate-800 rounded-3xl shadow-2xl border-4 border-amber-400 w-full max-w-sm p-6 animate-slideUp">
@@ -1236,6 +1289,15 @@ end $$;`
                 const showEmergencyModal = ref(false)
                 const showBackupModal = ref(false)
                 const showChangePasswordModal = ref(false)
+                const showLineSettingsModal = ref(false)
+
+                // ข้อมูลการเชื่อมต่อ LINE Messaging API
+                const lineSettings = ref({
+                    channelAccessToken: localStorage.getItem('wolf_line_token') || '',
+                    groupId: localStorage.getItem('wolf_line_group_id') || ''
+                })
+                const isSendingLine = ref(false)
+                const isTestingLine = ref(false)
 
                 // เช็คว่ากำลังเปิดหน้าต่างแก้ไขอยู่หรือไม่
                 const isAnyModalOpen = computed(() => {
@@ -1326,6 +1388,132 @@ end $$;`
                         nightShift: foundNight
                     }
                 })
+
+                // จัดการหน้าต่างและการส่งข้อมูล LINE OA Messaging API
+                const openLineSettingsModal = () => {
+                    showLineSettingsModal.value = true
+                }
+
+                const saveLineSettings = async () => {
+                    try {
+                        localStorage.setItem('wolf_line_token', lineSettings.value.channelAccessToken)
+                        localStorage.setItem('wolf_line_group_id', lineSettings.value.groupId)
+                    } catch (e) {}
+                    
+                    const ok1 = await saveSettingKeyToCloud('line_token', lineSettings.value.channelAccessToken)
+                    const ok2 = await saveSettingKeyToCloud('line_group_id', lineSettings.value.groupId)
+                    
+                    if (ok1 && ok2) {
+                        showLineSettingsModal.value = false
+                        showToast('บันทึกข้อมูลตั้งค่า LINE และซิงค์ขึ้น Cloud เรียบร้อย!', 'success')
+                    }
+                }
+
+                // สรุปข้อความตัวอักษรเพื่อส่งเข้า LINE
+                const generateTextSummary = () => {
+                    const s = todayShiftSummary.value
+                    let text = `🐺 *Wolf Delivery - อัปเดตเวรวันนี้*\n`
+                    text += `📅 *ประจำวัน${s.dayName}ที่:* ${s.dateNum} ${s.monthName} ${s.beYear}\n\n`
+                    
+                    text += `☀️ *กะกลางวัน:*\n`
+                    if (s.dayShift.isClosed) {
+                        text += `🏠 ปิดระบบ (${s.dayShift.closeReason || 'วันหยุดประจำเดือน'})\n`
+                    } else if (s.dayShift.riders.length > 0) {
+                        s.dayShift.riders.forEach((rName, idx) => {
+                            const info = getRiderInfo(rName)
+                            text += `${idx + 1}. ${rName} ${info.heart}\n`
+                        })
+                    } else {
+                        text += `ยังไม่มีไรเดอร์ลงเวร\n`
+                    }
+                    
+                    text += `\n🌙 *กะกลางคืน:*\n`
+                    if (s.nightShift.isClosed) {
+                        text += `🏠 ปิดระบบ (${s.nightShift.closeReason || 'วันหยุดประจำเดือน'})\n`
+                    } else if (s.nightShift.riders.length > 0) {
+                        s.nightShift.riders.forEach((rName, idx) => {
+                            const info = getRiderInfo(rName)
+                            text += `${idx + 1}. ${rName} ${info.heart}\n`
+                        })
+                    } else {
+                        text += `ยังไม่มีไรเดอร์ลงเวรคืนนี้\n`
+                    }
+                    
+                    return text
+                }
+
+                // ส่งข้อความทดสอบเข้า LINE OA
+                const testLineMessage = async () => {
+                    if (!lineSettings.value.channelAccessToken || !lineSettings.value.groupId) {
+                        showToast('กรุณากรอก Token และ Group ID ให้ครบก่อนทดสอบ', 'error')
+                        return
+                    }
+                    isTestingLine.value = true
+                    try {
+                        const response = await fetch('about:invalid#zPythonSafez', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${lineSettings.value.channelAccessToken}`
+                            },
+                            body: JSON.stringify({
+                                to: lineSettings.value.groupId,
+                                messages: [{
+                                    type: 'text',
+                                    text: '🔔 *ทดสอบระบบแจ้งเตือนตารางเวร Wolf Delivery*\nบอท "แจ้งเตือนเข้างาน" เชื่อมต่อกับระบบหน้าเว็บบันทึกเวรเรียบร้อยแล้ว!'
+                                }]
+                            })
+                        })
+                        if (response.ok) {
+                            showToast('ส่งข้อความทดสอบเข้ากลุ่ม LINE เรียบร้อยแล้ว!', 'success')
+                        } else {
+                            const errData = await response.json()
+                            showToast('ส่งไม่สำเร็จ: ' + (errData.message || response.statusText), 'error')
+                        }
+                    } catch (err) {
+                        showToast('เชื่อมต่อ API ของ LINE ไม่สำเร็จ (ติด CORS หรือเครือข่าย)', 'error')
+                        // แสดงข้อความแนะนำตัวแทนการยิงหลังบ้านตรงๆ หากติดเงื่อนไขเบราว์เซอร์
+                        console.error(err)
+                    } finally {
+                        isTestingLine.value = false
+                    }
+                }
+
+                // ส่งสรุปเวรด่วนของวันนี้เข้ากลุ่ม LINE OA
+                const sendTodayScheduleToLine = async () => {
+                    if (!lineSettings.value.channelAccessToken || !lineSettings.value.groupId) {
+                        showToast('กรุณาตั้งค่ารหัส Token และ Group ID ในเมนูแอดมินก่อนใช้งาน', 'error')
+                        return
+                    }
+                    isSendingLine.value = true
+                    const messageText = generateTextSummary()
+                    try {
+                        const response = await fetch('about:invalid#zPythonSafez', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${lineSettings.value.channelAccessToken}`
+                            },
+                            body: JSON.stringify({
+                                to: lineSettings.value.groupId,
+                                messages: [{
+                                    type: 'text',
+                                    text: messageText
+                                }]
+                            })
+                        })
+                        if (response.ok) {
+                            showToast('ส่งข้อความสรุปเวรวันนี้เข้ากลุ่ม LINE เรียบร้อย!', 'success')
+                        } else {
+                            showToast('ส่งสรุปไม่สำเร็จ กรุณาตรวจสอบสิทธิ์ของ Token', 'error')
+                        }
+                    } catch (err) {
+                        showToast('ยิง API ตรงติดปัญหา CORS (รหัสส่งออกเรียบร้อยแล้ว)', 'info')
+                        console.error(err)
+                    } finally {
+                        isSendingLine.value = false
+                    }
+                }
 
                 const openTodaySummary = async () => {
                     const today = new Date()
@@ -2239,6 +2427,7 @@ end $$;`
                     adminMode, showAdminLoginModal, adminPinInput, adminLoginError, isVerifyingPin,
                     toast, currentMonthDays, periodFilteredDays, displayedDays, posterDateRangeLabel,
                     isToday, showTodayModal, todayShiftSummary, openTodaySummary, jumpToTodayCard,
+                    openLineSettingsModal, saveLineSettings, testLineMessage, sendTodayScheduleToLine, lineSettings, isSendingLine, isTestingLine,
                     getRiderShiftStats, autoBalanceShifts, copyPreviousMonthSchedule, onRiderNameInputChanged,
                     onMonthOrYearChange, retrySupabaseSync, getRiderInfo, getRiderShiftCount,
                     openAdminModal, verifyAdminPassword, lockAdminScreen,
