@@ -1293,8 +1293,8 @@ end $$;`
 
                 // ข้อมูลการเชื่อมต่อ LINE Messaging API
                 const lineSettings = ref({
-                channelAccessToken: 'OkX2bw+ChDPc0BEBr4fQYuS39Megc7jYgUxepKC6uPebO6XNGX4iwwCNZx3YKqIpaJJ5cP3lVL7irt6LB0cZAtBFgWk4t6CqSfeLuhwT++lEKkXl6u9OOM1n8t7A2sg49Bb2cqLWM9d4afaKZbnOvQdB04t89/1O/w1cDnyilFU=',
-                groupId: 'Ccbef863d9c790d5633a141f1c5910196'
+                    channelAccessToken: 'OkX2bw+ChDPc0BEBr4fQYuS39Megc7jYgUxepKC6uPebO6XNGX4iwwCNZx3YKqIpaJJ5cP3lVL7irt6LB0cZAtBFgWk4t6CqSfeLuhwT++lEKkXl6u9OOM1n8t7A2sg49Bb2cqLWM9d4afaKZbnOvQdB04t89/1O/w1cDnyilFU=',
+                    groupId: 'Ccbef863d9c790d5633a141f1c5910196'
                 })
                 const isSendingLine = ref(false)
                 const isTestingLine = ref(false)
@@ -1409,37 +1409,353 @@ end $$;`
                     }
                 }
 
-                // สรุปข้อความตัวอักษรเพื่อส่งเข้า LINE
-                const generateTextSummary = () => {
+                // สร้างการ์ด Flex Message สวยงามเหมือนหน้าป๊อปอัปเว็บ Wolf Delivery
+                const generateFlexSummary = () => {
                     const s = todayShiftSummary.value
-                    let text = `🐺 *Wolf Delivery - อัปเดตเวรวันนี้*\n`
-                    text += `📅 *ประจำวัน${s.dayName}ที่:* ${s.dateNum} ${s.monthName} ${s.beYear}\n\n`
-                    
-                    text += `☀️ *กะกลางวัน:*\n`
+                    const dateHeader = `วัน${s.dayName}ที่ ${s.dateNum} ${s.monthName} ${s.beYear}`
+
+                    // กล่องกะกลางวัน
+                    const dayBoxContents = [
+                        {
+                            type: 'box',
+                            layout: 'horizontal',
+                            alignItems: 'center',
+                            contents: [
+                                {
+                                    type: 'text',
+                                    text: '☀️ กะกลางวัน',
+                                    weight: 'bold',
+                                    size: 'md',
+                                    color: '#0F172A',
+                                    flex: 1
+                                },
+                                {
+                                    type: 'box',
+                                    layout: 'vertical',
+                                    backgroundColor: s.dayShift.isClosed ? '#DC2626' : '#FDE68A',
+                                    cornerRadius: 'xl',
+                                    paddingStart: 'md',
+                                    paddingEnd: 'md',
+                                    paddingTop: 'xs',
+                                    paddingBottom: 'xs',
+                                    contents: [
+                                        {
+                                            type: 'text',
+                                            text: s.dayShift.isClosed ? 'ปิดระบบ' : `วิ่ง ${s.dayShift.riders.length} คน`,
+                                            size: 'xs',
+                                            weight: 'bold',
+                                            color: s.dayShift.isClosed ? '#FFFFFF' : '#78350F'
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+
                     if (s.dayShift.isClosed) {
-                        text += `🏠 ปิดระบบ (${s.dayShift.closeReason || 'วันหยุดประจำเดือน'})\n`
+                        dayBoxContents.push({
+                            type: 'box',
+                            layout: 'vertical',
+                            backgroundColor: '#DC2626',
+                            cornerRadius: 'lg',
+                            paddingAll: 'md',
+                            margin: 'md',
+                            contents: [
+                                {
+                                    type: 'text',
+                                    text: `🏠 ปิดระบบ (${s.dayShift.closeReason || 'วันหยุดประจำเดือน'})`,
+                                    color: '#FFFFFF',
+                                    weight: 'bold',
+                                    size: 'sm',
+                                    align: 'center',
+                                    wrap: true
+                                }
+                            ]
+                        })
                     } else if (s.dayShift.riders.length > 0) {
-                        s.dayShift.riders.forEach((rName, idx) => {
+                        const riderChips = s.dayShift.riders.map(rName => {
                             const info = getRiderInfo(rName)
-                            text += `${idx + 1}. ${rName} ${info.heart}\n`
+                            return {
+                                type: 'box',
+                                layout: 'horizontal',
+                                backgroundColor: '#FFFFFF',
+                                borderColor: info.color || '#F59E0B',
+                                borderWidth: '2px',
+                                cornerRadius: 'xl',
+                                paddingAll: 'sm',
+                                margin: 'sm',
+                                alignItems: 'center',
+                                contents: [
+                                    {
+                                        type: 'box',
+                                        layout: 'vertical',
+                                        width: '12px',
+                                        height: '12px',
+                                        cornerRadius: 'xxl',
+                                        backgroundColor: info.color || '#F97316',
+                                        contents: []
+                                    },
+                                    {
+                                        type: 'text',
+                                        text: `${rName} ${info.heart}`,
+                                        weight: 'bold',
+                                        size: 'sm',
+                                        color: '#0F172A',
+                                        margin: 'md',
+                                        flex: 1
+                                    },
+                                    {
+                                        type: 'text',
+                                        text: 'พร้อมวิ่ง',
+                                        size: 'xxs',
+                                        weight: 'bold',
+                                        color: '#059669'
+                                    }
+                                ]
+                            }
+                        })
+                        dayBoxContents.push({
+                            type: 'box',
+                            layout: 'vertical',
+                            margin: 'sm',
+                            contents: riderChips
                         })
                     } else {
-                        text += `ยังไม่มีไรเดอร์ลงเวร\n`
+                        dayBoxContents.push({
+                            type: 'text',
+                            text: 'ยังไม่มีไรเดอร์ลงเวรวันนี้',
+                            size: 'xs',
+                            color: '#64748B',
+                            align: 'center',
+                            margin: 'md'
+                        })
                     }
-                    
-                    text += `\n🌙 *กะกลางคืน:*\n`
+
+                    // กล่องกะกลางคืน
+                    const nightBoxContents = [
+                        {
+                            type: 'box',
+                            layout: 'horizontal',
+                            alignItems: 'center',
+                            contents: [
+                                {
+                                    type: 'text',
+                                    text: '🌙 กะกลางคืน',
+                                    weight: 'bold',
+                                    size: 'md',
+                                    color: '#FACC15',
+                                    flex: 1
+                                },
+                                {
+                                    type: 'box',
+                                    layout: 'vertical',
+                                    backgroundColor: s.nightShift.isClosed ? '#DC2626' : '#312E81',
+                                    cornerRadius: 'xl',
+                                    paddingStart: 'md',
+                                    paddingEnd: 'md',
+                                    paddingTop: 'xs',
+                                    paddingBottom: 'xs',
+                                    contents: [
+                                        {
+                                            type: 'text',
+                                            text: s.nightShift.isClosed ? 'ปิดระบบ' : `วิ่ง ${s.nightShift.riders.length} คน`,
+                                            size: 'xs',
+                                            weight: 'bold',
+                                            color: s.nightShift.isClosed ? '#FFFFFF' : '#C7D2FE'
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+
                     if (s.nightShift.isClosed) {
-                        text += `🏠 ปิดระบบ (${s.nightShift.closeReason || 'วันหยุดประจำเดือน'})\n`
+                        nightBoxContents.push({
+                            type: 'box',
+                            layout: 'vertical',
+                            backgroundColor: '#DC2626',
+                            cornerRadius: 'lg',
+                            paddingAll: 'md',
+                            margin: 'md',
+                            contents: [
+                                {
+                                    type: 'text',
+                                    text: `🏠 ปิดระบบ (${s.nightShift.closeReason || 'วันหยุดประจำเดือน'})`,
+                                    color: '#FFFFFF',
+                                    weight: 'bold',
+                                    size: 'sm',
+                                    align: 'center',
+                                    wrap: true
+                                }
+                            ]
+                        })
                     } else if (s.nightShift.riders.length > 0) {
-                        s.nightShift.riders.forEach((rName, idx) => {
+                        const nightChips = s.nightShift.riders.map(rName => {
                             const info = getRiderInfo(rName)
-                            text += `${idx + 1}. ${rName} ${info.heart}\n`
+                            return {
+                                type: 'box',
+                                layout: 'horizontal',
+                                backgroundColor: '#1E1B4B',
+                                borderColor: '#6366F1',
+                                borderWidth: '1px',
+                                cornerRadius: 'xl',
+                                paddingAll: 'sm',
+                                margin: 'sm',
+                                alignItems: 'center',
+                                contents: [
+                                    {
+                                        type: 'box',
+                                        layout: 'vertical',
+                                        width: '12px',
+                                        height: '12px',
+                                        cornerRadius: 'xxl',
+                                        backgroundColor: info.color || '#A855F7',
+                                        contents: []
+                                    },
+                                    {
+                                        type: 'text',
+                                        text: `${rName} ${info.heart}`,
+                                        weight: 'bold',
+                                        size: 'sm',
+                                        color: '#FFFFFF',
+                                        margin: 'md',
+                                        flex: 1
+                                    },
+                                    {
+                                        type: 'text',
+                                        text: 'กะดึก',
+                                        size: 'xxs',
+                                        weight: 'bold',
+                                        color: '#FDE047'
+                                    }
+                                ]
+                            }
+                        })
+                        nightBoxContents.push({
+                            type: 'box',
+                            layout: 'vertical',
+                            margin: 'sm',
+                            contents: nightChips
                         })
                     } else {
-                        text += `ยังไม่มีไรเดอร์ลงเวรคืนนี้\n`
+                        nightBoxContents.push({
+                            type: 'text',
+                            text: 'ยังไม่มีไรเดอร์ลงเวรคืนนี้',
+                            size: 'xs',
+                            color: '#94A3B8',
+                            align: 'center',
+                            margin: 'md'
+                        })
                     }
-                    
-                    return text
+
+                    return {
+                        type: 'flex',
+                        altText: `🐺 Wolf Delivery - อัปเดตเวร${dateHeader}`,
+                        contents: {
+                            type: 'bubble',
+                            size: 'mega',
+                            header: {
+                                type: 'box',
+                                layout: 'vertical',
+                                backgroundColor: '#0F172A',
+                                paddingAll: 'lg',
+                                contents: [
+                                    {
+                                        type: 'box',
+                                        layout: 'horizontal',
+                                        contents: [
+                                            {
+                                                type: 'box',
+                                                layout: 'vertical',
+                                                backgroundColor: '#FACC15',
+                                                cornerRadius: 'xl',
+                                                paddingStart: 'md',
+                                                paddingEnd: 'md',
+                                                paddingTop: 'xs',
+                                                paddingBottom: 'xs',
+                                                contents: [
+                                                    {
+                                                        type: 'text',
+                                                        text: '⚡ อัปเดตเวรวันนี้',
+                                                        size: 'xxs',
+                                                        weight: 'bold',
+                                                        color: '#0F172A'
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                type: 'text',
+                                                text: '🐺 Wolf Delivery',
+                                                size: 'xs',
+                                                weight: 'bold',
+                                                color: '#FB923C',
+                                                align: 'end',
+                                                gravity: 'center',
+                                                flex: 1
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        type: 'text',
+                                        text: dateHeader,
+                                        weight: 'bold',
+                                        size: 'lg',
+                                        color: '#FFFFFF',
+                                        margin: 'md',
+                                        wrap: true
+                                    }
+                                ]
+                            },
+                            body: {
+                                type: 'box',
+                                layout: 'vertical',
+                                backgroundColor: '#FFFFFF',
+                                paddingAll: 'lg',
+                                spacing: 'lg',
+                                contents: [
+                                    {
+                                        type: 'box',
+                                        layout: 'vertical',
+                                        backgroundColor: '#FFFBEB',
+                                        borderColor: '#FCD34D',
+                                        borderWidth: '2px',
+                                        cornerRadius: 'xl',
+                                        paddingAll: 'md',
+                                        contents: dayBoxContents
+                                    },
+                                    {
+                                        type: 'box',
+                                        layout: 'vertical',
+                                        backgroundColor: '#0F172A',
+                                        borderColor: '#6366F1',
+                                        borderWidth: '2px',
+                                        cornerRadius: 'xl',
+                                        paddingAll: 'md',
+                                        contents: nightBoxContents
+                                    }
+                                ]
+                            },
+                            footer: {
+                                type: 'box',
+                                layout: 'vertical',
+                                backgroundColor: '#F8FAFC',
+                                paddingAll: 'md',
+                                contents: [
+                                    {
+                                        type: 'button',
+                                        style: 'primary',
+                                        color: '#EA580C',
+                                        height: 'sm',
+                                        action: {
+                                            type: 'uri',
+                                            label: '📅 เปิดดูตารางเวรทั้งเดือน',
+                                            uri: window.location.href
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    }
                 }
 
                 // ส่งข้อความทดสอบเข้า LINE OA
@@ -1459,7 +1775,7 @@ end $$;`
                             body: JSON.stringify({
                                 token: lineSettings.value.channelAccessToken,
                                 groupId: lineSettings.value.groupId,
-                                message: '🔔 *ทดสอบระบบแจ้งเตือนตารางเวร Wolf Delivery*\nบอท "แจ้งเตือนเข้างาน" เชื่อมต่อกับระบบหน้าเว็บบันทึกเวรเรียบร้อยแล้ว!'
+                                message: '🔔 ทดสอบระบบแจ้งเตือนตารางเวร Wolf Delivery\nบอท "แจ้งเตือนเข้างาน" เชื่อมต่อกับระบบหน้าเว็บบันทึกเวรเรียบร้อยแล้ว!'
                             })
                         })
                         const resData = await response.json()
@@ -1476,14 +1792,14 @@ end $$;`
                     }
                 }
 
-                // ส่งสรุปเวรด่วนของวันนี้เข้ากลุ่ม LINE OA
+                // ส่งสรุปเวรด่วนของวันนี้เข้ากลุ่ม LINE OA (รูปแบบการ์ด Flex Message)
                 const sendTodayScheduleToLine = async () => {
                     if (!lineSettings.value.channelAccessToken || !lineSettings.value.groupId) {
                         showToast('กรุณาตั้งค่ารหัส Token และ Group ID ในเมนูแอดมินก่อนใช้งาน', 'error')
                         return
                     }
                     isSendingLine.value = true
-                    const messageText = generateTextSummary()
+                    const flexMessageObj = generateFlexSummary()
                     try {
                         const GAS_URL = 'https://script.google.com/macros/s/AKfycbyDwdFOpNu08SdKMe6-ckoQmAGzKMX3ul_ED6gQeM1QtGIqI72Ht91UEZO3Aep0HsGROw/exec'
                         const response = await fetch(GAS_URL, {
@@ -1494,12 +1810,13 @@ end $$;`
                             body: JSON.stringify({
                                 token: lineSettings.value.channelAccessToken,
                                 groupId: lineSettings.value.groupId,
-                                message: messageText
+                                flexMessage: flexMessageObj,
+                                message: flexMessageObj.altText
                             })
                         })
                         const resData = await response.json()
                         if (resData.ok) {
-                            showToast('ส่งข้อความสรุปเวรวันนี้เข้ากลุ่ม LINE เรียบร้อย!', 'success')
+                            showToast('ส่งการ์ดสรุปเวรวันนี้เข้ากลุ่ม LINE เรียบร้อย!', 'success')
                         } else {
                             showToast('ส่งสรุปไม่สำเร็จ: ' + (resData.body || resData.error || 'กรุณาตรวจสอบ Token'), 'error')
                         }
