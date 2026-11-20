@@ -1293,8 +1293,8 @@ end $$;`
 
                 // ข้อมูลการเชื่อมต่อ LINE Messaging API
                 const lineSettings = ref({
-                    channelAccessToken: localStorage.getItem('wolf_line_token') || '',
-                    groupId: localStorage.getItem('wolf_line_group_id') || ''
+                    channelAccessToken: 'OkX2bw+ChDPc0BEBr4fQYuS39Megc7jYgUxepKC6uPebO6XNGX4iwwCNZx3YKqIpaJJ5cP3lVL7irt6LB0cZAtBFgWk4t6CqSfeLuhwT++lEKkXl6u9OOM1n8t7A2sg49Bb2cqLWM9d4afaKZbnOvQdB04t89/1O/w1cDnyilFU=,
+                    groupId: 'Ca1735a297926b48408f654b0c2834b92'
                 })
                 const isSendingLine = ref(false)
                 const isTestingLine = ref(false)
@@ -1450,7 +1450,7 @@ end $$;`
                     }
                     isTestingLine.value = true
                     try {
-                        const response = await fetch('about:invalid#zPythonSafez', {
+                        const response = await fetch('https://api.line.me/v2/bot/message/push', {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
@@ -1488,7 +1488,7 @@ end $$;`
                     isSendingLine.value = true
                     const messageText = generateTextSummary()
                     try {
-                        const response = await fetch('about:invalid#zPythonSafez', {
+                        const response = await fetch('https://api.line.me/v2/bot/message/push', {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
