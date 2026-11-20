@@ -1450,29 +1450,26 @@ end $$;`
                     }
                     isTestingLine.value = true
                     try {
-                        const response = await fetch('https://api.line.me/v2/bot/message/push', {
+                        const GAS_URL = 'https://script.google.com/macros/s/AKfycbyDwdFOpNu08SdKMe6-ckoQmAGzKMX3ul_ED6gQeM1QtGIqI72Ht91UEZO3Aep0HsGROw/exec'
+                        const response = await fetch(GAS_URL, {
                             method: 'POST',
                             headers: {
-                                'Content-Type': 'application/json',
-                                'Authorization': `Bearer ${lineSettings.value.channelAccessToken}`
+                                'Content-Type': 'text/plain;charset=utf-8'
                             },
                             body: JSON.stringify({
-                                to: lineSettings.value.groupId,
-                                messages: [{
-                                    type: 'text',
-                                    text: '🔔 *ทดสอบระบบแจ้งเตือนตารางเวร Wolf Delivery*\nบอท "แจ้งเตือนเข้างาน" เชื่อมต่อกับระบบหน้าเว็บบันทึกเวรเรียบร้อยแล้ว!'
-                                }]
+                                token: lineSettings.value.channelAccessToken,
+                                groupId: lineSettings.value.groupId,
+                                message: '🔔 *ทดสอบระบบแจ้งเตือนตารางเวร Wolf Delivery*\nบอท "แจ้งเตือนเข้างาน" เชื่อมต่อกับระบบหน้าเว็บบันทึกเวรเรียบร้อยแล้ว!'
                             })
                         })
-                        if (response.ok) {
+                        const resData = await response.json()
+                        if (resData.ok) {
                             showToast('ส่งข้อความทดสอบเข้ากลุ่ม LINE เรียบร้อยแล้ว!', 'success')
                         } else {
-                            const errData = await response.json()
-                            showToast('ส่งไม่สำเร็จ: ' + (errData.message || response.statusText), 'error')
+                            showToast('ส่งไม่สำเร็จ: ' + (resData.body || resData.error || 'ไม่ทราบสาเหตุ'), 'error')
                         }
                     } catch (err) {
-                        showToast('เชื่อมต่อ API ของ LINE ไม่สำเร็จ (ติด CORS หรือเครือข่าย)', 'error')
-                        // แสดงข้อความแนะนำตัวแทนการยิงหลังบ้านตรงๆ หากติดเงื่อนไขเบราว์เซอร์
+                        showToast('เชื่อมต่อ Google Apps Script ไม่สำเร็จ: ' + err.message, 'error')
                         console.error(err)
                     } finally {
                         isTestingLine.value = false
@@ -1488,27 +1485,26 @@ end $$;`
                     isSendingLine.value = true
                     const messageText = generateTextSummary()
                     try {
-                        const response = await fetch('https://api.line.me/v2/bot/message/push', {
+                        const GAS_URL = 'https://script.google.com/macros/s/AKfycbyDwdFOpNu08SdKMe6-ckoQmAGzKMX3ul_ED6gQeM1QtGIqI72Ht91UEZO3Aep0HsGROw/exec'
+                        const response = await fetch(GAS_URL, {
                             method: 'POST',
                             headers: {
-                                'Content-Type': 'application/json',
-                                'Authorization': `Bearer ${lineSettings.value.channelAccessToken}`
+                                'Content-Type': 'text/plain;charset=utf-8'
                             },
                             body: JSON.stringify({
-                                to: lineSettings.value.groupId,
-                                messages: [{
-                                    type: 'text',
-                                    text: messageText
-                                }]
+                                token: lineSettings.value.channelAccessToken,
+                                groupId: lineSettings.value.groupId,
+                                message: messageText
                             })
                         })
-                        if (response.ok) {
+                        const resData = await response.json()
+                        if (resData.ok) {
                             showToast('ส่งข้อความสรุปเวรวันนี้เข้ากลุ่ม LINE เรียบร้อย!', 'success')
                         } else {
-                            showToast('ส่งสรุปไม่สำเร็จ กรุณาตรวจสอบสิทธิ์ของ Token', 'error')
+                            showToast('ส่งสรุปไม่สำเร็จ: ' + (resData.body || resData.error || 'กรุณาตรวจสอบ Token'), 'error')
                         }
                     } catch (err) {
-                        showToast('ยิง API ตรงติดปัญหา CORS (รหัสส่งออกเรียบร้อยแล้ว)', 'info')
+                        showToast('เชื่อมต่อ Google Apps Script ไม่สำเร็จ: ' + err.message, 'error')
                         console.error(err)
                     } finally {
                         isSendingLine.value = false
